@@ -1,4 +1,11 @@
 <?php
+//TODO: Autohide cursor
+//TODO: Show following blogs on side panel with scroll
+//TODO: Follow action
+//TODO: Like action
+//TODO: Open post on new page
+//TODO: When no more posts?
+//TODO: If no videos?
         define("EOL", "<br />\n");
 
         session_start();
@@ -167,6 +174,9 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-equiv="Cache-Control" content="max-age=3600, must-revalidate">
+  <meta name="theme-color" content="#222222" />
   <!--<link rel="icon" href="img/favicon.ico" type="image/x-icon">-->
   <!--<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon">-->
   <!--<link rel="stylesheet" type="text/css" href="style.css">-->
@@ -207,13 +217,12 @@
             });
         },
         response: function(data){
-            //console.log("response");
+            console.log("response");
             $("#loader").hide();
             this.slides = this.slides.concat(data);
             if (this.currentSlide == 0) {
                 this.display();
             }
-            this.test();
         },
         lock: function() {
             //console.log("Locked.");
@@ -330,8 +339,10 @@
                 elmt = document.documentElement || document.body;
                 prop = "client";
             }
-            var ww = elmt[prop + "Width"],
-                wh = elmt[prop + "Height"],
+            var /*ww = elmt[prop + "Width"],
+                wh = elmt[prop + "Height"],*/
+                ww = Math.min(document.documentElement.clientWidth,window.innerWidth||0),
+                wh = Math.min(document.documentElement.clientHeight,window.innerHeight||0),
                 iw = $(this.iframe).width(),
                 ih = $(this.iframe).height(),
                 rw = wh / ww,
@@ -412,26 +423,52 @@
             $("#header").toggle();
         }
     });
-    $("#blog-name, #reblogged-from, #source, #likes").on('click',function (e){
+    $("#blog-name, #reblogged-from, #source, #likes, #view-blog").on('click',function (e){
         //console.log("Clicked on " + $(this).html());
         //console.log("with id " + this.id);
-        if (this.id == "likes") {
-            layouts.push({
-                __proto__: layout$,
-                layoutType: "likes"
-            });
-        } else {
-            layouts.push({
-                __proto__: layout$,
-                layoutType: "blog",
-                blog:$(this).html()
-            });
+        switch(this.id) {
+            case 'likes':
+                layouts.push({
+                    __proto__: layout$,
+                    layoutType: "likes"
+                });
+            break;
+            case 'view-blog':
+                if ($('#view-blog-name').is(":visible")) {
+                    $('#view-blog-name').hide();
+                    if ($('#view-blog-name').val() != '') {
+                        layouts.push({
+                            __proto__: layout$,
+                            layoutType: "blog",
+                            blog:$('#view-blog-name').val()
+                        });
+                        $('#view-blog-name').val('');
+                    } else {
+                        return;
+                    }
+                } else {
+                    $('#view-blog-name').show();
+                    return;
+                }
+            break;
+            default:
+                layouts.push({
+                    __proto__: layout$,
+                    layoutType: "blog",
+                    blog:$(this).html()
+                });
+            break;
         }
+
         //console.log(layouts);
         currentLayout = layouts[layouts.length-1];
         currentLayout.update();
         $("#back-icon").show();
         //currentLayout.test();
+    });
+    $('#view-blog-name').on("keypress", function(e) {
+        if (e.keyCode == 13)
+            $('#view-blog').click();
     });
     $("#back-icon").on('click',function (e){
         layouts.pop();
@@ -454,12 +491,10 @@
       padding: 0;
 	  border: 0;
     }
-
     html,body {
       height: 100%;
       background:black;
     }
-
     #header {
       height:50px;
       width: 100%;
@@ -470,16 +505,13 @@
       left:0;
       z-index:100;
     }
-
     #header {
         padding-left: 25px;
     }
-
     .header-text {
         line-height: 50px;
         color: white;
     }
-
     .svg-icon {
         fill: currentColor;
         height: 3ex;
@@ -501,21 +533,6 @@
         left: 0;
         z-index: -1;
     }
-
-    select {
-        border: none;
-        color: white;
-        background-color: transparent;
-        text-indent: 0.01px;
-    }
-
-    select:focus { outline: none; }
-
-    select option {
-        color: white;
-        background-color: black;
-    }
-
     #buttons {
         position: fixed;
         top: 0;
@@ -525,29 +542,49 @@
     #buttons a {
        text-decoration: none;
     }
+    #view-blog-name {
+        display:none;
+        border: 0.02px solid white;
+        color: white;
+        background-color: transparent;
+        height: 1.5em;
+        padding-left: 1ex;
+    }
+    #view-blog-name:focus { outline: none; }
+    select {
+        border: 0.02px solid white;
+        color: white;
+        background-color: transparent;
+        text-indent: 0.01px;
+        height: 1.5em;
+        padding-left: 1ex;
+    }
+    select:focus { outline: none; }
 
-#loader {
-    display:none;
-    position:fixed;
-    top:60px;
-    left:10px;
-    border: 0.2em solid #f3f3f3;
-    border-top: 0.2em solid #333333;
-    border-radius: 50%;
-    width: 1em;
-    height: 1em;
-    animation: spin 1s linear infinite;
-}
+    select option {
+        color: white;
+        background-color: black;
+    }
+    #loader {
+        display:none;
+        position:fixed;
+        top:60px;
+        left:10px;
+        border: 0.2em solid #f3f3f3;
+        border-top: 0.2em solid #333333;
+        border-radius: 50%;
+        width: 1em;
+        height: 1em;
+        animation: spin 1s linear infinite;
+    }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
     #content {
       height: 100%;
     }
-
     .photo {
       display:block;
       position: relative;
@@ -590,11 +627,19 @@
     <a id="source" class="header-text" href="#"></a>
     <a id="reblogged-from" class="header-text" href="#"></a>
     <div id="buttons">
-        <select id="type">
-          <option value="all">All </option>
-          <option value="photo">Photo</option>
-          <option value="video">Video</option>
-        </select>
+      <input type="text" id="view-blog-name" placeholder="Blog name">
+      <a id="view-blog" class="header-text" href="#">
+        <svg id="view-blog-likes-icon" class="svg-icon">
+          <svg viewBox="0 0 100 100" x="0px" y="0px">
+            <path d="M77.82,8.13H22.18A22.18,22.18,0,0,0,0,30.31V69.69A22.18,22.18,0,0,0,22.18,91.87H77.82A22.18,22.18,0,0,0,100,69.69V30.31A22.18,22.18,0,0,0,77.82,8.13ZM81.41,74a3.59,3.59,0,0,1-3.59,3.59H22.17A3.59,3.59,0,0,1,18.59,74V70a3.59,3.59,0,0,1,3.59-3.59H77.83A3.59,3.59,0,0,1,81.41,70v4Zm0-22a3.59,3.59,0,0,1-3.59,3.59H22.17A3.59,3.59,0,0,1,18.59,52V48a3.59,3.59,0,0,1,3.59-3.59H77.83A3.59,3.59,0,0,1,81.41,48v4Zm0-22.59A3.59,3.59,0,0,1,77.83,33H22.17a3.59,3.59,0,0,1-3.59-3.59v-4a3.59,3.59,0,0,1,3.59-3.59H77.83a3.59,3.59,0,0,1,3.59,3.59v4Z"/>
+          </svg>
+        </svg>
+      </a>
+      <select id="type">
+        <option value="all">All </option>
+        <option value="photo">Photo</option>
+        <option value="video">Video</option>
+      </select>
       <a id="likes" class="header-text" href="#">
         <svg id="likes-icon" class="svg-icon">
           <svg viewBox="0 0 100 100" x="0px" y="0px"  width="100%" height="100%">
