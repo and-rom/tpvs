@@ -229,7 +229,6 @@
             //console.log("Current slide: " + this.currentSlide);
             this.lock();
             this.displayPostInfo();
-            $('#content').empty();
             if (this.slides[this.currentSlide].type == "photo") {
                 this.displayPhoto();
             } else {
@@ -262,6 +261,7 @@
             this.iframe.src = this.slides[this.currentSlide].src;
             var _this = this;
             this.iframe.onload = function() {
+                $('#content').empty();
                 $(this).appendTo('#content').attr('id',"photo").addClass("photo");
                 _this.resize();
                 _this.unlock();
