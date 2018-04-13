@@ -1,13 +1,10 @@
 <?php
-//TODO: Autohide cursor
 //TODO: Show following blogs on side panel with scroll
 //TODO: Follow action
 //TODO: Like action
 //TODO: Open post on new page
 //TODO: When no more posts?
 //TODO: If no videos?
-        define("EOL", "<br />\n");
-
         session_start();
 
         require_once('vendor/autoload.php');
@@ -62,22 +59,28 @@
         header('Content-Type: application/json; charset=utf-8');
         $action = (!empty($_GET['action']) ? $_GET['action'] : "dash");
         $onpage=20;
-        $page = (!empty($_GET['page']) ? $_GET['page'] : 1);
-        $offset=($page-1)*$onpage;
-        $counter=$offset;
+        $options['limit'] = 20;
+        //$page = (!empty($_GET['page']) ? $_GET['page'] : 1);
+        //$offset=($page-1)*$onpage;
         $obj = new stdClass;
         switch ($action) {
             case "dash":
             case "blog":
             case "likes":
-                $options = array('limit'       => $onpage,
-                                 'offset'      => $offset);
+                $options['reblog_info'] = true;
                 switch ($action) {
                     case "dash":
                     case "blog":
-                        $options['reblog_info'] = true;
+                        if (isset($_GET['before'])) {
+                            $options['before_id'] = $_GET['before'];
+                        }
                         if (isset($_GET['type']) && ($_GET['type'] == "photo" || $_GET['type'] == "video")) {
                             $options['type'] = $_GET['type'];
+                        }
+                    break;
+                    case "likes":
+                        if (isset($_GET['before'])) {
+                            $options['before'] = $_GET['before'];
                         }
                     break;
                 }
@@ -106,8 +109,6 @@
                             exit;
                         }
                     break;
-                    default:
-                    break;
                 }
                 $res_array = [];
                 foreach ($posts as $post) {
@@ -115,6 +116,8 @@
                     $obj->type = $post->type;
                     $obj->id = $post->id;
                     $obj->timestamp = $post->timestamp;
+                    $obj->reblog_key = $post->reblog_key;
+                    $obj->liked_timestamp = (isset($post->liked_timestamp) ? $post->liked_timestamp : "" );
                     $obj->rebloged_from = (isset($post->reblogged_from_name) ? $post->reblogged_from_name : "" );
                     $obj->source = (isset($post->reblogged_root_name) ? $post->reblogged_root_name : "" );
                     switch ($post->type) {
@@ -138,26 +141,17 @@
                 echo json_encode($res_array ,JSON_UNESCAPED_UNICODE);
                 break;
             case "followed":
-                $totalFollowedBlogs = $clientInfo->user->following;
-                $totalPages = intval($totalFollowedBlogs / $onpage) + ($totalFollowedBlogs % $onpage > 0 ? 1 : 0);
-
-                echo "Total blogs $totalFollowedBlogs".EOL;
-                echo "Total pages $totalPages".EOL;
-
-                if ($page <= $totalPages) {
-                    $f = $offset+1;
-                    $t = $offset+$onpage;
-                    echo "Page $page. Offset $offset. Blogs from $f to $t".EOL;
+                $obj = new stdClass;
+                $obj->total_blogs = $clientInfo->user->following;
+                $obj->blogs = [];
+                $onpage=20;
+                $totalPages = intval($obj->total_blogs / $onpage) + ($obj->total_blogs % $onpage > 0 ? 1 : 0);
+                for ($page = 1; $page<=$totalPages; $page++) {
+                    $offset=($page-1)*$onpage;
                     $followedBlogs = $client->getFollowedBlogs(array('limit' => $onpage, 'offset' => $offset));
-                    foreach ($followedBlogs->blogs as $blog) {
-                        $counter++;
-                        echo $counter.". ";
-                        echo $blog->name;echo EOL;
-                    }
+                    $obj->blogs = array_merge($obj->blogs,$followedBlogs->blogs);
                 }
-                break;
-            case "likes":
-                echo "No developed yet.";
+                echo json_encode($obj ,JSON_UNESCAPED_UNICODE);
                 break;
             default:
                 echo "Wrong request.";
@@ -183,7 +177,7 @@
   <!--<script type="text/javascript" src="index.js"></script>-->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script type="text/javascript">
-  $(document).ready(function(){
+$(document).ready(function(){
 
     var currentLayout;
 
@@ -195,7 +189,8 @@
         blog:"",
         type:"all",
         currentSlide:0,
-        currentPage:0,
+        //currentPage:0,
+        before:"",
         slides: [],
         iframe: null,
         locked: false,
@@ -203,14 +198,17 @@
         update: function(){
             //console.log("Updating " + this.blog);
             $("#loader").show();
-            this.currentPage++;
+            //this.currentPage++;
+            this.before = this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.slides[this.slides.length-1].id : "";
+            console.log("Before " + this.before);
             $.ajax({
                 dataType: "json",
                 url: "./index.php",
                 async: true,
                 data: {action: this.layoutType,
                        blog:   this.blog,
-                       page:   this.currentPage,
+                       //page:   this.currentPage,
+                       before:   this.before,
                        type:   this.type},
                 context: this,
                 success: this.response
@@ -218,6 +216,7 @@
         },
         response: function(data){
             console.log("response");
+            console.log(data);
             $("#loader").hide();
             this.slides = this.slides.concat(data);
             if (this.currentSlide == 0) {
@@ -306,13 +305,16 @@
         },
         show: function(whereTo) {
             if (!this.locked) {
+                var status;
                 if (whereTo > 0) {
-                    this.prev();
+                    status = this.prev();
                 } else {
-                    this.next();
+                    status = this.next();
                 }
-                this.display();
-                $("#header").hide();
+                if (status) {
+                    this.display();
+                    $("#header").hide();
+                }
             } else {
                 //console.log("Still locked. Downloading. Wait.");
             }
@@ -324,12 +326,18 @@
             }
             if (this.currentSlide < this.slides.length-1) {
                 this.currentSlide++;
+                return true;
+            } else {
+                return false;
             }
         },
         prev: function(){
-            //console.log("prev");
+            //console.log("prev);
             if (this.currentSlide > 0) {
                 this.currentSlide--;
+                return true;
+            } else {
+                return false;
             }
         },
         resize: function(){
@@ -462,6 +470,7 @@
 
         //console.log(layouts);
         currentLayout = layouts[layouts.length-1];
+        $("#type").val(currentLayout.type);
         currentLayout.update();
         $("#back-icon").show();
         //currentLayout.test();
@@ -473,6 +482,7 @@
     $("#back-icon").on('click',function (e){
         layouts.pop();
         currentLayout = layouts[layouts.length-1];
+        $("#type").val(currentLayout.type);
         currentLayout.display();
         if (layouts.length == 1) $("#back-icon").hide();
     });
@@ -483,7 +493,37 @@
         currentLayout.slides=[];
         currentLayout.update();
     });
-  });
+    var timer;
+    var hided = false;
+    $(window).mousemove(function () {
+        if (!hided) {
+            if (timer) {
+                clearTimeout(timer);
+                timer = 0;
+            }
+        } else {
+            $('html').css({cursor: ''});
+            hided = false;
+        }
+        timer = setTimeout(function () {
+            $('html').css({cursor: 'none'});
+            hided = true;
+        }, 2000);
+    });
+    var stealthMode = true;
+    $(window).on('mouseleave blur focusout', function (e) {
+        e.preventDefault();
+        if (stealthMode) {
+            $('body').hide();
+        }
+    });
+    $(window).on('mouseenter mouseover', function (e) {
+        e.preventDefault();
+        if (stealthMode) {
+          $('body').show();
+        }
+    });
+});
   </script>
   <style type="text/css">
     * {
