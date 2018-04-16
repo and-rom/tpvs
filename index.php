@@ -474,6 +474,36 @@
         currentLayout.slides=[];
         currentLayout.update();
     });
+    var timer;
+    var hided = false;
+    $(window).mousemove(function () {
+        if (!hided) {
+            if (timer) {
+                clearTimeout(timer);
+                timer = 0;
+            }
+        } else {
+            $('html').css({cursor: ''});
+            hided = false;
+        }
+        timer = setTimeout(function () {
+            $('html').css({cursor: 'none'});
+            hided = true;
+        }, 2000);
+    });
+    var stealthMode = true;
+    $(window).on('mouseleave blur focusout', function (e) {
+        e.preventDefault();
+        if (stealthMode) {
+            $('body').hide();
+        }
+    });
+    $(window).on('mouseenter mouseover', function (e) {
+        e.preventDefault();
+        if (stealthMode) {
+          $('body').show();
+        }
+    });
   });
   </script>
   <style type="text/css">
