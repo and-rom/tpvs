@@ -66,10 +66,10 @@
             case "blog":
             case "likes":
                 $options['offset']=($page-1)*$options['limit'];
+                $options['reblog_info'] = true;
                 switch ($action) {
                     case "dash":
                     case "blog":
-                        $options['reblog_info'] = true;
                         if (isset($_GET['type']) && ($_GET['type'] == "photo" || $_GET['type'] == "video")) {
                             $options['type'] = $_GET['type'];
                         }
