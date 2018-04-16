@@ -138,26 +138,17 @@
                 echo json_encode($res_array ,JSON_UNESCAPED_UNICODE);
                 break;
             case "followed":
-                $totalFollowedBlogs = $clientInfo->user->following;
-                $totalPages = intval($totalFollowedBlogs / $onpage) + ($totalFollowedBlogs % $onpage > 0 ? 1 : 0);
-
-                echo "Total blogs $totalFollowedBlogs".EOL;
-                echo "Total pages $totalPages".EOL;
-
-                if ($page <= $totalPages) {
-                    $f = $offset+1;
-                    $t = $offset+$onpage;
-                    echo "Page $page. Offset $offset. Blogs from $f to $t".EOL;
+                $obj = new stdClass;
+                $obj->total_blogs = $clientInfo->user->following;
+                $obj->blogs = [];
+                $onpage=20;
+                $totalPages = intval($obj->total_blogs / $onpage) + ($obj->total_blogs % $onpage > 0 ? 1 : 0);
+                for ($page = 1; $page<=$totalPages; $page++) {
+                    $offset=($page-1)*$onpage;
                     $followedBlogs = $client->getFollowedBlogs(array('limit' => $onpage, 'offset' => $offset));
-                    foreach ($followedBlogs->blogs as $blog) {
-                        $counter++;
-                        echo $counter.". ";
-                        echo $blog->name;echo EOL;
-                    }
+                    $obj->blogs = array_merge($obj->blogs,$followedBlogs->blogs);
                 }
-                break;
-            case "likes":
-                echo "No developed yet.";
+                echo json_encode($obj ,JSON_UNESCAPED_UNICODE);
                 break;
             default:
                 echo "Wrong request.";
