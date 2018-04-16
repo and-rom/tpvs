@@ -112,6 +112,8 @@
                     $obj->type = $post->type;
                     $obj->id = $post->id;
                     $obj->timestamp = $post->timestamp;
+                    $obj->reblog_key = $post->reblog_key;
+                    $obj->liked_timestamp = (isset($post->liked_timestamp) ? $post->liked_timestamp : "" );
                     $obj->rebloged_from = (isset($post->reblogged_from_name) ? $post->reblogged_from_name : "" );
                     $obj->source = (isset($post->reblogged_root_name) ? $post->reblogged_root_name : "" );
                     switch ($post->type) {
