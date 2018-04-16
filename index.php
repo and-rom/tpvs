@@ -58,17 +58,14 @@
     if (isset($_GET) && count($_GET)) {
         header('Content-Type: application/json; charset=utf-8');
         $action = (!empty($_GET['action']) ? $_GET['action'] : "dash");
-        $onpage=20;
         $page = (!empty($_GET['page']) ? $_GET['page'] : 1);
-        $offset=($page-1)*$onpage;
-        $counter=$offset;
+        $options['limit'] = 20;
         $obj = new stdClass;
         switch ($action) {
             case "dash":
             case "blog":
             case "likes":
-                $options = array('limit'       => $onpage,
-                                 'offset'      => $offset);
+                $options['offset']=($page-1)*$options['limit'];
                 switch ($action) {
                     case "dash":
                     case "blog":
@@ -138,11 +135,10 @@
                 $obj = new stdClass;
                 $obj->total_blogs = $clientInfo->user->following;
                 $obj->blogs = [];
-                $onpage=20;
-                $totalPages = intval($obj->total_blogs / $onpage) + ($obj->total_blogs % $onpage > 0 ? 1 : 0);
+                $totalPages = intval($obj->total_blogs / $options['limit']) + ($obj->total_blogs % $options['limit'] > 0 ? 1 : 0);
                 for ($page = 1; $page<=$totalPages; $page++) {
-                    $offset=($page-1)*$onpage;
-                    $followedBlogs = $client->getFollowedBlogs(array('limit' => $onpage, 'offset' => $offset));
+                    $options['offset']=($page-1)*$options['limit'];
+                    $followedBlogs = $client->getFollowedBlogs($options);
                     $obj->blogs = array_merge($obj->blogs,$followedBlogs->blogs);
                 }
                 echo json_encode($obj ,JSON_UNESCAPED_UNICODE);
