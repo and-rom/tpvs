@@ -103,8 +103,6 @@
                             exit;
                         }
                     break;
-                    default:
-                    break;
                 }
                 $res_array = [];
                 foreach ($posts as $post) {
