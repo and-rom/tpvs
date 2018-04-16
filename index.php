@@ -1,5 +1,4 @@
 <?php
-//TODO: Autohide cursor
 //TODO: Show following blogs on side panel with scroll
 //TODO: Follow action
 //TODO: Like action
