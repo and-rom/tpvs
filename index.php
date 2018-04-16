@@ -58,9 +58,8 @@
     if (isset($_GET) && count($_GET)) {
         header('Content-Type: application/json; charset=utf-8');
         $action = (!empty($_GET['action']) ? $_GET['action'] : "dash");
-        $onpage=20;
-        $options['limit'] = 20;
         //$page = (!empty($_GET['page']) ? $_GET['page'] : 1);
+        $options['limit'] = 20;
         //$offset=($page-1)*$onpage;
         $obj = new stdClass;
         switch ($action) {
@@ -144,11 +143,10 @@
                 $obj = new stdClass;
                 $obj->total_blogs = $clientInfo->user->following;
                 $obj->blogs = [];
-                $onpage=20;
-                $totalPages = intval($obj->total_blogs / $onpage) + ($obj->total_blogs % $onpage > 0 ? 1 : 0);
+                $totalPages = intval($obj->total_blogs / $options['limit']) + ($obj->total_blogs % $options['limit'] > 0 ? 1 : 0);
                 for ($page = 1; $page<=$totalPages; $page++) {
-                    $offset=($page-1)*$onpage;
-                    $followedBlogs = $client->getFollowedBlogs(array('limit' => $onpage, 'offset' => $offset));
+                    $options['offset']=($page-1)*$options['limit'];
+                    $followedBlogs = $client->getFollowedBlogs($options);
                     $obj->blogs = array_merge($obj->blogs,$followedBlogs->blogs);
                 }
                 echo json_encode($obj ,JSON_UNESCAPED_UNICODE);
@@ -177,7 +175,7 @@
   <!--<script type="text/javascript" src="index.js"></script>-->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script type="text/javascript">
-$(document).ready(function(){
+  $(document).ready(function(){
 
     var currentLayout;
 
@@ -332,7 +330,7 @@ $(document).ready(function(){
             }
         },
         prev: function(){
-            //console.log("prev);
+            //console.log("prev");
             if (this.currentSlide > 0) {
                 this.currentSlide--;
                 return true;
@@ -523,7 +521,7 @@ $(document).ready(function(){
           $('body').show();
         }
     });
-});
+  });
   </script>
   <style type="text/css">
     * {
