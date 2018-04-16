@@ -208,6 +208,7 @@
         },
         response: function(data){
             console.log("response");
+            console.log(data);
             $("#loader").hide();
             this.slides = this.slides.concat(data);
             if (this.currentSlide == 0) {
@@ -296,13 +297,16 @@
         },
         show: function(whereTo) {
             if (!this.locked) {
+                var status;
                 if (whereTo > 0) {
-                    this.prev();
+                    status = this.prev();
                 } else {
-                    this.next();
+                    status = this.next();
                 }
-                this.display();
-                $("#header").hide();
+                if (status) {
+                    this.display();
+                    $("#header").hide();
+                }
             } else {
                 //console.log("Still locked. Downloading. Wait.");
             }
@@ -314,12 +318,18 @@
             }
             if (this.currentSlide < this.slides.length-1) {
                 this.currentSlide++;
+                return true;
+            } else {
+                return false;
             }
         },
         prev: function(){
             //console.log("prev");
             if (this.currentSlide > 0) {
                 this.currentSlide--;
+                return true;
+            } else {
+                return false;
             }
         },
         resize: function(){
@@ -452,6 +462,7 @@
 
         //console.log(layouts);
         currentLayout = layouts[layouts.length-1];
+        $("#type").val(currentLayout.type);
         currentLayout.update();
         $("#back-icon").show();
         //currentLayout.test();
@@ -463,6 +474,7 @@
     $("#back-icon").on('click',function (e){
         layouts.pop();
         currentLayout = layouts[layouts.length-1];
+        $("#type").val(currentLayout.type);
         currentLayout.display();
         if (layouts.length == 1) $("#back-icon").hide();
     });
