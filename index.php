@@ -6,8 +6,6 @@
 //TODO: Open post on new page
 //TODO: When no more posts?
 //TODO: If no videos?
-        define("EOL", "<br />\n");
-
         session_start();
 
         require_once('vendor/autoload.php');
