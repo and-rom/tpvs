@@ -541,8 +541,14 @@
     });
     //Touch
     $('body')
-        .on('swiperight',function(){currentLayout.show(1);})
-        .on('swipeleft',function(){currentLayout.show(-1);});
+        .on('swiperight',function(){
+            console.log("Swipe right");
+            currentLayout.show(1);
+        })
+        .on('swipeleft',function(){
+            console.log("Swipe left");
+            currentLayout.show(-1);
+        });
   });
   </script>
   <style type="text/css">
