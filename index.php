@@ -183,6 +183,7 @@
         slides: [],
         iframe: null,
         locked: false,
+        wasHidden: false,
         // Methods
         update: function(){
             //console.log("Updating " + this.blog);
@@ -218,6 +219,15 @@
             //console.log("Unlocked.");
             $("#loader").hide();
             this.locked = false;
+        },
+        checkHidden: function() {
+            if ($('body').is(":visible")) {
+                console.log("this.wasHidden = false;");
+                this.wasHidden = false;
+            } else {
+                console.log("this.wasHidden = true;");
+                this.wasHidden = true;
+            }
         },
         display: function(){
             //console.log("Current slide: " + this.currentSlide);
@@ -280,7 +290,7 @@
                 });
                 $(this.iframe).on("ended",function (e){
                     _this.next();
-                     _this.display();
+                    _this.display();
                 });
             } else {
                 //console.log(this.slides[this.currentSlide].type);
@@ -327,7 +337,11 @@
             }
         },
         resize: function(){
-            //console.log("this.resizing");
+            this.checkHidden();
+            if (this.wasHidden) {
+                return;
+            }
+            console.log("this.resizing");
             var elmt = window, prop = "inner";
             if (!("innerWidth" in window)) {
                 elmt = document.documentElement || document.body;
@@ -500,13 +514,18 @@
     $(window).on('mouseleave blur focusout', function (e) {
         e.preventDefault();
         if (stealthMode) {
+            console.log("Hiding body");
             $('body').hide();
         }
     });
     $(window).on('mouseenter mouseover', function (e) {
         e.preventDefault();
         if (stealthMode) {
-          $('body').show();
+            console.log("Showing body");
+            $('body').show();
+            if (currentLayout.wasHidden) {
+                currentLayout.resize();
+            }
         }
     });
   });
