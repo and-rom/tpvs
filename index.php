@@ -5,6 +5,7 @@
 //TODO: Open post on new page
 //TODO: When no more posts?
 //TODO: If no videos?
+//TODO: Show post caption and other messages with pop-up notifications
         session_start();
 
         require_once('vendor/autoload.php');
@@ -184,9 +185,14 @@
         iframe: null,
         locked: false,
         wasHidden: false,
+        updateLocked: false,
         // Methods
         update: function(){
-            //console.log("Updating " + this.blog);
+            console.log("Updating " + this.blog);
+            if (this.updateLocked) {
+                console.log("Update locked");
+                return;
+            }
             $("#loader").show();
             this.currentPage++;
             $.ajax({
@@ -203,20 +209,23 @@
         },
         response: function(data){
             console.log("response");
+            console.log("Get " + data.length + " posts");
             console.log(data);
             $("#loader").hide();
             this.slides = this.slides.concat(data);
+            console.log("Total posts: " + this.slides.length);
+            this.updateLocked = false;
             if (this.currentSlide == 0) {
                 this.display();
             }
         },
         lock: function() {
-            //console.log("Locked.");
+            console.log("Locked.");
             $("#loader").show();
             this.locked = true;
         },
         unlock: function() {
-            //console.log("Unlocked.");
+            console.log("Unlocked.");
             $("#loader").hide();
             this.locked = false;
         },
@@ -230,7 +239,7 @@
             }
         },
         display: function(){
-            //console.log("Current slide: " + this.currentSlide);
+            console.log("Current slide: " + this.currentSlide + "/" + this.slides.length + " >" + this.slides.length/2);
             this.lock();
             this.displayPostInfo();
             if (this.slides[this.currentSlide].type == "photo") {
@@ -302,6 +311,7 @@
         show: function(whereTo) {
             if (!this.locked) {
                 var status;
+                console.log(whereTo);
                 if (whereTo > 0) {
                     status = this.prev();
                 } else {
@@ -312,13 +322,14 @@
                     $("#header").hide();
                 }
             } else {
-                //console.log("Still locked. Downloading. Wait.");
+                console.log("Still locked. Downloading. Wait.");
             }
         },
         next: function(){
             //console.log("next");
             if (this.currentSlide > this.slides.length/2) {
                 this.update();
+                this.updateLocked = true;
             }
             if (this.currentSlide < this.slides.length-1) {
                 this.currentSlide++;
@@ -528,6 +539,10 @@
             }
         }
     });
+    //Touch
+    $('body')
+        .on('swiperight',function(){currentLayout.show(1);})
+        .on('swipeleft',function(){currentLayout.show(-1);});
   });
   </script>
   <style type="text/css">
