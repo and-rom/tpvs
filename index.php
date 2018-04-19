@@ -5,7 +5,6 @@
 //TODO: Open post on new page
 //TODO: When no more posts?
 //TODO: If no videos?
-//TODO: Show post caption and other messages with pop-up notifications
         session_start();
 
         require_once('vendor/autoload.php');
@@ -112,6 +111,7 @@
                     $obj->liked_timestamp = (isset($post->liked_timestamp) ? $post->liked_timestamp : "" );
                     $obj->rebloged_from = (isset($post->reblogged_from_name) ? $post->reblogged_from_name : "" );
                     $obj->source = (isset($post->reblogged_root_name) ? $post->reblogged_root_name : "" );
+                    $obj->caption = (isset($post->caption) ? $post->caption : "" );
                     switch ($post->type) {
                         case "photo":
                             foreach ($post->photos as $photo) {
@@ -168,8 +168,9 @@
   <!--<script type="text/javascript" src="index.js"></script>-->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script type="text/javascript">
-  $(document).ready(function(){
 
+  $(document).ready(function(){
+    console.log("Doc ready");
     var currentLayout;
 
     var layouts = [];
@@ -268,6 +269,7 @@
             }
 
             $("#date").html(this.age(this.slides[this.currentSlide].timestamp));
+            $("#footer").html(this.slides[this.currentSlide].caption);
         },
         displayPhoto: function() {
             this.iframe = new Image();
@@ -311,7 +313,6 @@
         show: function(whereTo) {
             if (!this.locked) {
                 var status;
-                console.log(whereTo);
                 if (whereTo > 0) {
                     status = this.prev();
                 } else {
@@ -319,7 +320,7 @@
                 }
                 if (status) {
                     this.display();
-                    $("#header").hide();
+                    $("#header, #footer").hide();
                 }
             } else {
                 console.log("Still locked. Downloading. Wait.");
@@ -401,6 +402,14 @@
             else if (elapsed < 31536000000) {return 'approximately ' + Math.round(elapsed/2592000000) + ' months ago';}
             else {return 'approximately ' + Math.round(elapsed/31536000000) + ' years ago';}
         },
+        seek: function(direction) {
+            if (this.slides[this.currentSlide].type == "video") {
+                stepPosition = Math.round(this.iframe[0].duration * 0.05);
+                if (stepPosition < 1) stepPosition = 1;
+                var newPosition = this.iframe[0].currentTime + stepPosition*direction;
+                if (newPosition > 0 || newPosition < this.iframe[0].duration)this.iframe[0].currentTime = newPosition;
+            }
+        },
         test: function(){
             console.log("this.layoutType: " + this.layoutType);
             console.log("this.blog: " + this.blog);
@@ -424,22 +433,19 @@
     $(window).resize(function (e){
         currentLayout.resize()
     });
-    $(window).on('mousewheel DOMMouseScroll',function (e){
-        currentLayout.show(parseInt(e.originalEvent.wheelDelta || - e.originalEvent.detail));
-    });
     $("#content").on('click',function (e){
 
         if ($(currentLayout.iframe).is("video")) {
             if ($(currentLayout.iframe)[0].paused) {
                 $(currentLayout.iframe)[0].play();
-                $("#header").hide();
+                $("#header, #footer").hide();
             } else {
                 $(currentLayout.iframe).prop("controls",true);
                 $(currentLayout.iframe)[0].pause();
-                $("#header").show();
+                $("#header, #footer").show();
             }
         } else {
-            $("#header").toggle();
+            $("#header, #footer").toggle();
         }
     });
     $("#blog-name, #reblogged-from, #source, #likes, #view-blog").on('click',function (e){
@@ -471,11 +477,15 @@
                 }
             break;
             default:
-                layouts.push({
-                    __proto__: layout$,
-                    layoutType: "blog",
-                    blog:$(this).html()
-                });
+                if ($(this).html() != "" ) {
+                    layouts.push({
+                        __proto__: layout$,
+                        layoutType: "blog",
+                        blog:$(this).html()
+                    });
+                } else {
+                    return;
+                }
             break;
         }
 
@@ -484,6 +494,7 @@
         $("#type").val(currentLayout.type);
         currentLayout.update();
         $("#back-icon").show();
+        $("#header, #footer").hide();
         //currentLayout.test();
     });
     $('#view-blog-name').on("keypress", function(e) {
@@ -498,6 +509,7 @@
         if (layouts.length == 1) $("#back-icon").hide();
     });
     $("#type").change(function (e){
+        $("#header, #footer").hide();
         currentLayout.type=this.value;
         currentLayout.currentSlide=0;
         currentLayout.currentPage=0;
@@ -521,7 +533,13 @@
             hided = true;
         }, 2000);
     });
-    var stealthMode = true;
+    var stealthMode = !( navigator.userAgent.match(/Android/i)    ||
+                         navigator.userAgent.match(/webOS/i)      ||
+                         navigator.userAgent.match(/iPhone/i)     ||
+                         navigator.userAgent.match(/iPad/i)       ||
+                         navigator.userAgent.match(/iPod/i)       ||
+                         navigator.userAgent.match(/BlackBerry/i) ||
+                         navigator.userAgent.match(/Windows Phone/i));
     $(window).on('mouseleave blur focusout', function (e) {
         e.preventDefault();
         if (stealthMode) {
@@ -539,44 +557,150 @@
             }
         }
     });
-    //Touch
-    $('body')
-        .on('swiperight',function(){
-            console.log("Swipe right");
-            currentLayout.show(1);
-        })
-        .on('swipeleft',function(){
-            console.log("Swipe left");
-            currentLayout.show(-1);
-        });
+    // keybindings
+    $(document).on('keydown',function(event){
+        switch (event.which){
+            case 39:  // right
+            case 65:  // 'A'
+                currentLayout.show(1);
+                break;
+            case 37: // left
+            case 68: // 'D'
+                currentLayout.show(-1);
+                break;
+            case 87: // 'w'
+                // back
+                $("#back-icon").click();
+                break;
+            case 69: // 'e'
+                // blog
+                $("#blog-name").click();
+            case 83: // 's'
+                // reblog
+                $("#reblogged-from").click();
+                break;
+            case 88: // 'x'
+                // src
+                $("#source").click();
+                break;
+            case 82: // 'r'
+                // all
+                $("#type").val("all").trigger('change');
+            case 70: // 'f'
+                // photo
+                $("#type").val("photo").trigger('change');
+                break;
+            case 86: // 'v'
+                // video
+                $("#type").val("video").trigger('change');
+                break;
+            case 32: // space
+                $("#content").click();
+                break;
+            case 67: // 'c'
+                currentLayout.seek(1);
+                break;
+            case 90: // 'z'
+                currentLayout.seek(-1);
+                break;
+            case 220: // '\'
+                stealthMode = !stealthMode;
+                break;
+            default:
+                break;
+        }
+    });
+    // mouse wheel
+    $(window).on('mousewheel DOMMouseScroll',function (e){
+        currentLayout.show(parseInt(e.originalEvent.wheelDelta || - e.originalEvent.detail));
+    });
+    // touch
+    var touchOff = false;
+    $(document).bind('touchstart', function (ev) {
+        if ( touchOff ) {return;}
+        var e = ev.originalEvent;
+        xDown = e.touches[0].clientX;
+        yDown = e.touches[0].clientY;
+    });
+    $(document).bind('touchmove', function (ev) {
+        if ( touchOff ) {return;}
+        var e = ev.originalEvent;
+        if ( ! xDown || ! yDown ) {return;}
+        xUp = e.touches[0].clientX;
+        yUp = e.touches[0].clientY;
+    });
+    $(document).bind('touchend', function (ev) {
+        if ( touchOff ) {return;}
+        if ( typeof xUp == 'undefined' || ! xUp || ! yUp ) {return;}
+        var xDiff = xDown - xUp;
+        var yDiff = yDown - yUp;
+        if ( Math.abs( xDiff ) > Math.abs( yDiff ) ) {
+            if ( xDiff > 25 ) {
+                currentLayout.show(-1);
+            } else if (xDiff < -25) {
+                currentLayout.show(1);
+            }
+        } else {
+            if ( yDiff > 100 ) {
+                // up swipe
+            } else if (yDiff < -100) {
+                // down swipe
+            }
+        }
+        xDown = null;
+        yDown = null;
+        xUp = null;
+        yUp = null;
+    });
   });
+
   </script>
   <style type="text/css">
     * {
-	  margin: 0;
-      padding: 0;
-	  border: 0;
+    	margin: 0;
+        padding: 0;
+	    border: 0;
     }
     html,body {
-      height: 100%;
-      background:black;
+          height: 100%;
+          background:black;
+          touch-action: none;
+    }
+    a {
+        color:white;
     }
     #header {
-      height:50px;
-      width: 100%;
-      background: rgba(40, 40, 40, .5);
-      color:white;
-      position:fixed;
-      top: 0;
-      left:0;
-      z-index:100;
+        display:none;
+        min-height:50px;
+        width: 100%;
+        background: rgba(40, 40, 40, .5);
+        color:white;
+        position:fixed;
+        top: 0;
+        left:0;
+        z-index:1;
+        text-align:center;
     }
-    #header {
-        padding-left: 25px;
-    }
-    .header-text {
+    .header-container{
+        display:inline-block;
         line-height: 50px;
-        color: white;
+    }
+    #blogs {
+        float: left;
+        margin-left: 10px;
+    }
+    #date {
+        text-align:left;
+        margin:0 auto !important;
+        display:inline-block;
+        overflow: hidden;
+    }
+    #buttons{
+        float: right;
+        margin-right: 10px;
+    }
+    #buttons a {
+        text-decoration: none;
     }
     .svg-icon {
         fill: currentColor;
@@ -584,29 +708,11 @@
         width: 3ex;
         vertical-align: text-top;
     }
-    .svg-reblog-icon {
+    .svg-path-icon {
         display:none;
     }
     #back-icon {
         cursor: pointer;
-    }
-    #date {
-        display: inline-block;
-        width: 100%;
-        position: fixed;
-        text-align: center;
-        top: 0;
-        left: 0;
-        z-index: -1;
-    }
-    #buttons {
-        position: fixed;
-        top: 0;
-        right: 0;
-        padding-right: 50px;
-    }
-    #buttons a {
-       text-decoration: none;
     }
     #view-blog-name {
         display:none;
@@ -617,6 +723,9 @@
         padding-left: 1ex;
     }
     #view-blog-name:focus { outline: none; }
+    #view-blog-name::placeholder {
+        color: rgba(255, 255, 255, .7);
+    }
     select {
         border: 0.02px solid white;
         color: white;
@@ -626,7 +735,6 @@
         padding-left: 1ex;
     }
     select:focus { outline: none; }
-
     select option {
         color: white;
         background-color: black;
@@ -634,7 +742,7 @@
     #loader {
         display:none;
         position:fixed;
-        top:60px;
+        top:10px;
         left:10px;
         border: 0.2em solid #f3f3f3;
         border-top: 0.2em solid #333333;
@@ -642,28 +750,40 @@
         width: 1em;
         height: 1em;
         animation: spin 1s linear infinite;
+        z-index: 2;
     }
-
     @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
     #content {
-      height: 100%;
+        height: 100%;
     }
-    .photo {
-      display:block;
-      position: relative;
+    .photo,video {
+        display:block;
+        position: relative;
     }
-    video {
-      display:block;
-      position: relative;
+    #footer {
+        display:none;
+        min-height:0;
+        max-height:50%;
+        width: 100%;
+        background: rgba(40, 40, 40, .5);
+        color:white;
+        position:fixed;
+        bottom: 0;
+        left:0;
+        padding: 0 10px;
+        z-index:100;
+        overflow: hidden;
     }
   </style>
 </head>
 <body>
   <div id="header">
-    <svg id="back-icon" class="svg-icon svg-reblog-icon">
+    <div id="blogs">
+      <div id="blog" class="header-container">
+    <svg id="back-icon" class="svg-icon svg-path-icon">
       <svg x="0px" y="0px" viewBox="0 0 30 30" width="100%" height="100%">
         <g stroke="none" stroke-width="1" sketch:type="MSPage">
           <g sketch:type="MSArtboardGroup" transform="translate(-45.000000, -585.000000)">
@@ -673,7 +793,9 @@
       </svg>
     </svg>
     <a id="blog-name" class="header-text" href="#"></a>
-    <svg id="reblogged-from-icon" class="svg-icon svg-reblog-icon">
+      </div>
+      <div id="reblog" class="header-container">
+    <svg id="reblogged-from-icon" class="svg-icon svg-path-icon">
       <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
         <g>
           <polygon points="36.496,59.407 36.499,48.238 49.982,48.241 30.177,27.559 8.787,47.978 24.142,47.981    24.136,71.879 63.87,71.89 51.752,59.508  "/>
@@ -682,7 +804,9 @@
       </svg>
     </svg>
     <a id="reblogged-from" class="header-text" href="#"></a>
-    <svg id="source-icon" class="svg-icon svg-reblog-icon">
+      </div>
+      <div id="srcblog" class="header-container">
+    <svg id="source-icon" class="svg-icon svg-path-icon">
       <svg x="0px" y="0px" viewBox="0 0 96 96" width="100%" height="100%">
         <g>
           <path d="M28.4,35.2C24.7,39.5,22,45.6,22,53.3v16.2h17.7c2.9,0,5.2-2.3,5.2-5.2V46.4H31.9c0.7-2.7,1.9-4.9,3.4-6.7   c1.6-1.9,3.5-3.4,6.2-4.4c2-0.7,3.3-2.6,3.3-4.7v-3.9C36.6,27.9,32.1,30.8,28.4,35.2z"/>
@@ -691,8 +815,10 @@
       </svg>
     </svg>
     <a id="source" class="header-text" href="#"></a>
-    <a id="reblogged-from" class="header-text" href="#"></a>
-    <div id="buttons">
+      </div>
+    </div>
+      <div id="date" class="header-container"></div>
+      <div id="buttons" class="header-container">
       <input type="text" id="view-blog-name" placeholder="Blog name">
       <a id="view-blog" class="header-text" href="#">
         <svg id="view-blog-likes-icon" class="svg-icon">
@@ -702,9 +828,9 @@
         </svg>
       </a>
       <select id="type">
-        <option value="all">All </option>
-        <option value="photo">Photo</option>
-        <option value="video">Video</option>
+        <option value="all">all</option>
+        <option value="photo">photo</option>
+        <option value="video">video</option>
       </select>
       <a id="likes" class="header-text" href="#">
         <svg id="likes-icon" class="svg-icon">
@@ -725,13 +851,15 @@
           </svg>
         </svg>
       </a>
-    </div>
-  <span id="date" class="header-text"></span>
+      </div>
   </div>
   <div id="loader"></div>
+
+
   <div id="content">
     <!--<img class="photo" id="photo" src="https://78.media.tumblr.com/e571c5a59194a56d45230be599b97db4/tumblr_p5d0bdvDXG1vt4jtuo1_1280.jpg" />-->
   </div>
+  <div id="footer"></div>
 </body>
 </html>
 <?php
