@@ -494,6 +494,7 @@
         $("#type").val(currentLayout.type);
         currentLayout.update();
         $("#back-icon").show();
+        if (layouts.length > 2) $("#home-icon").show();
         $("#header, #footer").hide();
         //currentLayout.test();
     });
@@ -506,7 +507,22 @@
         currentLayout = layouts[layouts.length-1];
         $("#type").val(currentLayout.type);
         currentLayout.display();
-        if (layouts.length == 1) $("#back-icon").hide();
+        if (layouts.length == 1) {
+            $("#back-icon").hide();
+            $("#home-icon").hide();
+        }
+    });
+    $("#home-icon").on('click',function (e){
+        while (layouts.length > 1) {
+            layouts.pop();
+        }
+        currentLayout = layouts[layouts.length-1];
+        $("#type").val(currentLayout.type);
+        currentLayout.display();
+        if (layouts.length == 1) {
+            $("#back-icon").hide();
+            $("#home-icon").hide();
+        }
     });
     $("#type").change(function (e){
         $("#header, #footer").hide();
@@ -567,6 +583,10 @@
             case 37: // left
             case 68: // 'D'
                 currentLayout.show(-1);
+                break;
+            case 81: // 'q'
+                // home
+                $("#home-icon").click();
                 break;
             case 87: // 'w'
                 // back
@@ -711,7 +731,7 @@
     .svg-path-icon {
         display:none;
     }
-    #back-icon {
+    #back-icon, #home-icon {
         cursor: pointer;
     }
     #view-blog-name {
@@ -783,6 +803,14 @@
   <div id="header">
     <div id="blogs">
       <div id="blog" class="header-container">
+    <svg id="home-icon" class="svg-icon svg-path-icon">
+      <svg viewBox="0 0 100 100" version="1.1" x="0px" y="0px">
+        <g transform="translate(0.000000, 7.000000)">
+          <path d="M82.8622114,49.1091585 L51.1489041,24.3788258 C50.4414677,23.8271624 49.4496869,23.8271624 48.7420548,24.3788258 L17.0289432,49.1091585 C16.5534051,49.48 16.2753229,50.0492759 16.2753229,50.652407 L16.2753229,83.2238356 C16.2753229,84.3046575 17.1516438,85.1807828 18.2322701,85.1807828 L81.6588845,85.1807828 C82.7395108,85.1807828 83.6158317,84.3046575 83.6158317,83.2238356 L83.6158317,50.652407 C83.6158317,50.0492759 83.3377495,49.48 82.8622114,49.1091585"/>
+          <path d="M99.143092,38.3099217 L51.1544423,0.613835616 C50.4446575,0.0563013699 49.4464188,0.0563013699 48.7366341,0.613835616 L0.747984344,38.3099217 C0.339960861,38.6304697 0.0759686888,39.100137 0.0139334638,39.6154012 C-0.0479060665,40.1308611 0.0974951076,40.6496477 0.418043053,41.0576712 L7.23193738,49.7320352 C7.61823875,50.2234247 8.19221135,50.4801761 8.77225049,50.4801761 C9.19514677,50.4801761 9.62136986,50.3435812 9.97988258,50.0619765 L49.945636,18.6678474 L89.9113894,50.0619765 C90.3196086,50.3827202 90.8383953,50.5281213 91.3536595,50.4660861 C91.8691194,50.4042466 92.338591,50.1400587 92.6593346,49.7320352 L99.473229,41.0576712 C100.140744,40.2077691 99.9929941,38.9776321 99.143092,38.3099217"/>
+        </g>
+      </svg>
+    </svg>
     <svg id="back-icon" class="svg-icon svg-path-icon">
       <svg x="0px" y="0px" viewBox="0 0 30 30" width="100%" height="100%">
         <g stroke="none" stroke-width="1" sketch:type="MSPage">
