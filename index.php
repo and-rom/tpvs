@@ -5,47 +5,42 @@
 //TODO: Open post on new page
 //TODO: When no more posts?
 //TODO: If no videos?
-        session_start();
 
-        require_once('vendor/autoload.php');
-        require_once("config.php");
 
-        $tmpToken = isset($_SESSION['tmp_oauth_token'])? $_SESSION['tmp_oauth_token'] : null;
-        $tmpTokenSecret = isset($_SESSION['tmp_oauth_token_secret'])? $_SESSION['tmp_oauth_token_secret'] : null;
-        $client = new Tumblr\API\Client($consumerKey, $consumerSecret, $tmpToken, $tmpTokenSecret);
-        // Change the base url
-        $requestHandler = $client->getRequestHandler();
-        $requestHandler->setBaseUrl('https://www.tumblr.com/');
-        if (!empty($_GET['oauth_verifier'])) {
-            // exchange the verifier for the keys
-            $verifier = trim($_GET['oauth_verifier']);
-            $resp = $requestHandler->request('POST', 'oauth/access_token', array('oauth_verifier' => $verifier));
-            $out = (string) $resp->body;
-            $data = array();
-            parse_str($out, $data);
-            unset($_SESSION['tmp_oauth_token']);
-            unset($_SESSION['tmp_oauth_token_secret']);
-            $_SESSION['Tumblr_oauth_token'] = $data['oauth_token'];
-            $_SESSION['Tumblr_oauth_token_secret'] = $data['oauth_token_secret'];
-            header('Location: ./');
-            exit;
-        }
-        if (empty($_SESSION['Tumblr_oauth_token']) || empty($_SESSION['Tumblr_oauth_token_secret'])) {
-            header('Content-Type: text/html; charset=utf-8');
-            // start the old gal up
-            $callbackUrl = $_SERVER['REQUEST_SCHEME']."://".$_SERVER['SERVER_NAME'].dirname($_SERVER['SCRIPT_NAME']);
-            $resp = $requestHandler->request('POST', 'oauth/request_token', array(
-                    'oauth_callback' => $callbackUrl
-                ));
-            // Get the result
-            $result = (string) $resp->body;
-            parse_str($result, $keys);
-            $_SESSION['tmp_oauth_token'] = $keys['oauth_token'];
-            $_SESSION['tmp_oauth_token_secret'] = $keys['oauth_token_secret'];
-            $url = 'https://www.tumblr.com/oauth/authorize?oauth_token=' . $keys['oauth_token'];
-            echo '<a href="'.$url.'">Connect Tumblr</a>';
-            exit;
-        }
+if (isset($_GET) && count($_GET)) {
+
+    $action = (isset($_GET['action']) ? $_GET['action'] : "");
+    $page = (isset($_GET['page']) ? $_GET['page'] : 1);
+    $response = new stdClass;
+
+    session_start();
+
+    require_once('vendor/autoload.php');
+    require_once("config.php");
+
+    $tmpToken = isset($_SESSION['tmp_oauth_token'])? $_SESSION['tmp_oauth_token'] : null;
+    $tmpTokenSecret = isset($_SESSION['tmp_oauth_token_secret'])? $_SESSION['tmp_oauth_token_secret'] : null;
+    $client = new Tumblr\API\Client($consumerKey, $consumerSecret, $tmpToken, $tmpTokenSecret);
+    // Change the base url
+    $requestHandler = $client->getRequestHandler();
+    $requestHandler->setBaseUrl('https://www.tumblr.com/');
+    if (!empty($_GET['oauth_verifier'])) {
+        // exchange the verifier for the keys
+        $verifier = trim($_GET['oauth_verifier']);
+        $resp = $requestHandler->request('POST', 'oauth/access_token', array('oauth_verifier' => $verifier));
+        $out = (string) $resp->body;
+        $data = array();
+        parse_str($out, $data);
+        unset($_SESSION['tmp_oauth_token']);
+        unset($_SESSION['tmp_oauth_token_secret']);
+        $_SESSION['Tumblr_oauth_token'] = $data['oauth_token'];
+        $_SESSION['Tumblr_oauth_token_secret'] = $data['oauth_token_secret'];
+        header('Location: ./');
+        exit;
+    }
+
+    if ( !(empty($_SESSION['Tumblr_oauth_token']) || empty($_SESSION['Tumblr_oauth_token_secret'])) ) {
+
         $client = new Tumblr\API\Client(
             $consumerKey,
             $consumerSecret,
@@ -53,15 +48,9 @@
             $_SESSION['Tumblr_oauth_token_secret']
         );
 
-    $clientInfo = $client->getUserInfo();
+        $clientInfo = $client->getUserInfo();
 
-    if (isset($_GET) && count($_GET)) {
-        header('Content-Type: application/json; charset=utf-8');
-        $action = (!empty($_GET['action']) ? $_GET['action'] : "dash");
-        //$page = (!empty($_GET['page']) ? $_GET['page'] : 1);
         $options['limit'] = 20;
-        //$offset=($page-1)*$onpage;
-        $obj = new stdClass;
         switch ($action) {
             case "dash":
             case "blog":
@@ -92,7 +81,7 @@
                         if (!empty($_GET['blog'])) {
                             $blog = $_GET['blog'];
                         } else {
-                            exit;
+                            $code = 400;
                         }
                         $response = $client->getBlogPosts($blog, $options);
                         $posts = $response->posts;
@@ -104,13 +93,14 @@
                             $response = $client->getLikedPosts($options);
                             $posts = $response->liked_posts;
                         } else {
-                            echo json_encode([] ,JSON_UNESCAPED_UNICODE);
-                            exit;
+                            $code = 400;
                         }
                     break;
                 }
-                $res_array = [];
+                //$res_array = [];
+                $response->posts = [];
                 foreach ($posts as $post) {
+                    $obj = new stdClass;
                     $obj->blog_name = $post->blog_name;
                     $obj->type = $post->type;
                     $obj->id = $post->id;
@@ -119,11 +109,12 @@
                     $obj->liked_timestamp = (isset($post->liked_timestamp) ? $post->liked_timestamp : "" );
                     $obj->rebloged_from = (isset($post->reblogged_from_name) ? $post->reblogged_from_name : "" );
                     $obj->source = (isset($post->reblogged_root_name) ? $post->reblogged_root_name : "" );
+                    $obj->caption = (isset($post->caption) ? $post->caption : "" );
                     switch ($post->type) {
                         case "photo":
                             foreach ($post->photos as $photo) {
                                 $obj->src = $photo->original_size->url;
-                                $res_array[] = clone $obj;
+                                $response->posts[] = clone $obj;
                             }
                             break;
                         case "video":
@@ -131,13 +122,14 @@
                             $obj->html5_capable = (isset($post->html5_capable) ? $post->html5_capable : "" );
                             $obj->player = (isset($post->player) ? $post->player[count($post->player)-1]->embed_code : "" );
                             $obj->video_url = (isset($post->video_url) ? $post->video_url : "" );
-                            $res_array[] = clone $obj;
+                            $response->posts[] = clone $obj;
                             break;
                         default:
                             break;
                     }
                 }
-                echo json_encode($res_array ,JSON_UNESCAPED_UNICODE);
+                //echo json_encode($res_array ,JSON_UNESCAPED_UNICODE);
+                $code = 200;
                 break;
             case "followed":
                 $obj = new stdClass;
@@ -149,13 +141,53 @@
                     $followedBlogs = $client->getFollowedBlogs($options);
                     $obj->blogs = array_merge($obj->blogs,$followedBlogs->blogs);
                 }
-                echo json_encode($obj ,JSON_UNESCAPED_UNICODE);
+                $response->followed_blogs = $obj;
+                $code = 200;
                 break;
             default:
-                echo "Wrong request.";
+                $code = 405;
                 break;
         }
+
     } else {
+        // start the old gal up
+        $callbackUrl = $_SERVER['REQUEST_SCHEME']."://".$_SERVER['SERVER_NAME'].dirname($_SERVER['SCRIPT_NAME']);
+        $resp = $requestHandler->request('POST', 'oauth/request_token', array('oauth_callback' => $callbackUrl));
+        // Get the result
+        $result = (string) $resp->body;
+        parse_str($result, $keys);
+        $_SESSION['tmp_oauth_token'] = $keys['oauth_token'];
+        $_SESSION['tmp_oauth_token_secret'] = $keys['oauth_token_secret'];
+        $url = 'https://www.tumblr.com/oauth/authorize?oauth_token=' . $keys['oauth_token'];
+        $code = 511;
+    }
+
+    switch ($code) {
+        case 200:
+            $response->msg = "OK";
+            break;
+        case 400:
+            $response->msg = "Bad Request";
+            break;
+        case 405:
+            $response->msg = "Method Not Allowed";
+            break;
+        case 511:
+            $response->auth_url = $url;
+            $response->msg = "Authentication Required";
+            break;
+        default:
+            $response->msg = "Unknown Error";
+            break;
+    }
+
+    $response->code = $code;
+
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($response ,JSON_UNESCAPED_UNICODE);
+
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -187,16 +219,20 @@
         blog:"",
         type:"all",
         currentSlide:0,
-        //currentPage:0,
         before:"",
         slides: [],
         iframe: null,
         locked: false,
+        wasHidden: false,
+        updateLocked: false,
         // Methods
         update: function(){
-            //console.log("Updating " + this.blog);
+            console.log("Updating " + this.blog);
+            if (this.updateLocked) {
+                console.log("Update locked");
+                return;
+            }
             $("#loader").show();
-            //this.currentPage++;
             this.before = this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.slides[this.slides.length-1].id : "";
             console.log("Before " + this.before);
             $.ajax({
@@ -205,7 +241,6 @@
                 async: true,
                 data: {action: this.layoutType,
                        blog:   this.blog,
-                       //page:   this.currentPage,
                        before:   this.before,
                        type:   this.type},
                 context: this,
@@ -214,25 +249,51 @@
         },
         response: function(data){
             console.log("response");
-            console.log(data);
-            $("#loader").hide();
-            this.slides = this.slides.concat(data);
-            if (this.currentSlide == 0) {
-                this.display();
+            console.log(data.posts);
+            switch (data.code) {
+                case 200:
+                    if (data.hasOwnProperty('posts')) {
+                        console.log("Get " + data.posts.length + " posts");
+
+                        $("#loader").hide();
+                        this.slides = this.slides.concat(data.posts);
+                        console.log("Total posts: " + this.slides.length);
+                        this.updateLocked = false;
+                        if (this.currentSlide == 0) {
+                            this.display();
+                        }
+                    }
+                    break;
+                case 511:
+                    if (data.hasOwnProperty('auth_url')) {
+                        window.location.href = data.auth_url;
+                    }
+                    break;
+                default:
+                    break;
             }
         },
         lock: function() {
-            //console.log("Locked.");
+            console.log("Locked.");
             $("#loader").show();
             this.locked = true;
         },
         unlock: function() {
-            //console.log("Unlocked.");
+            console.log("Unlocked.");
             $("#loader").hide();
             this.locked = false;
         },
+        checkHidden: function() {
+            if ($('body').is(":visible")) {
+                console.log("this.wasHidden = false;");
+                this.wasHidden = false;
+            } else {
+                console.log("this.wasHidden = true;");
+                this.wasHidden = true;
+            }
+        },
         display: function(){
-            //console.log("Current slide: " + this.currentSlide);
+            console.log("Current slide: " + this.currentSlide + "/" + this.slides.length + " >" + this.slides.length/2);
             this.lock();
             this.displayPostInfo();
             if (this.slides[this.currentSlide].type == "photo") {
@@ -261,6 +322,7 @@
             }
 
             $("#date").html(this.age(this.slides[this.currentSlide].timestamp));
+            $("#footer").html(this.slides[this.currentSlide].caption);
         },
         displayPhoto: function() {
             this.iframe = new Image();
@@ -292,7 +354,7 @@
                 });
                 $(this.iframe).on("ended",function (e){
                     _this.next();
-                     _this.display();
+                    _this.display();
                 });
             } else {
                 //console.log(this.slides[this.currentSlide].type);
@@ -311,16 +373,17 @@
                 }
                 if (status) {
                     this.display();
-                    $("#header").hide();
+                    $("#header, #footer").hide();
                 }
             } else {
-                //console.log("Still locked. Downloading. Wait.");
+                console.log("Still locked. Downloading. Wait.");
             }
         },
         next: function(){
             //console.log("next");
             if (this.currentSlide > this.slides.length/2) {
                 this.update();
+                this.updateLocked = true;
             }
             if (this.currentSlide < this.slides.length-1) {
                 this.currentSlide++;
@@ -339,7 +402,11 @@
             }
         },
         resize: function(){
-            //console.log("this.resizing");
+            this.checkHidden();
+            if (this.wasHidden) {
+                return;
+            }
+            console.log("this.resizing");
             var elmt = window, prop = "inner";
             if (!("innerWidth" in window)) {
                 elmt = document.documentElement || document.body;
@@ -388,6 +455,14 @@
             else if (elapsed < 31536000000) {return 'approximately ' + Math.round(elapsed/2592000000) + ' months ago';}
             else {return 'approximately ' + Math.round(elapsed/31536000000) + ' years ago';}
         },
+        seek: function(direction) {
+            if (this.slides[this.currentSlide].type == "video") {
+                stepPosition = Math.round(this.iframe[0].duration * 0.05);
+                if (stepPosition < 1) stepPosition = 1;
+                var newPosition = this.iframe[0].currentTime + stepPosition*direction;
+                if (newPosition > 0 || newPosition < this.iframe[0].duration)this.iframe[0].currentTime = newPosition;
+            }
+        },
         test: function(){
             console.log("this.layoutType: " + this.layoutType);
             console.log("this.blog: " + this.blog);
@@ -411,22 +486,19 @@
     $(window).resize(function (e){
         currentLayout.resize()
     });
-    $(window).on('mousewheel DOMMouseScroll',function (e){
-        currentLayout.show(parseInt(e.originalEvent.wheelDelta || - e.originalEvent.detail));
-    });
     $("#content").on('click',function (e){
 
         if ($(currentLayout.iframe).is("video")) {
             if ($(currentLayout.iframe)[0].paused) {
                 $(currentLayout.iframe)[0].play();
-                $("#header").hide();
+                $("#header, #footer").hide();
             } else {
                 $(currentLayout.iframe).prop("controls",true);
                 $(currentLayout.iframe)[0].pause();
-                $("#header").show();
+                $("#header, #footer").show();
             }
         } else {
-            $("#header").toggle();
+            $("#header, #footer").toggle();
         }
     });
     $("#blog-name, #reblogged-from, #source, #likes, #view-blog").on('click',function (e){
@@ -458,11 +530,15 @@
                 }
             break;
             default:
-                layouts.push({
-                    __proto__: layout$,
-                    layoutType: "blog",
-                    blog:$(this).html()
-                });
+                if ($(this).html() != "" ) {
+                    layouts.push({
+                        __proto__: layout$,
+                        layoutType: "blog",
+                        blog:$(this).html()
+                    });
+                } else {
+                    return;
+                }
             break;
         }
 
@@ -471,6 +547,8 @@
         $("#type").val(currentLayout.type);
         currentLayout.update();
         $("#back-icon").show();
+        if (layouts.length > 2) $("#home-icon").show();
+        $("#header, #footer").hide();
         //currentLayout.test();
     });
     $('#view-blog-name').on("keypress", function(e) {
@@ -482,9 +560,25 @@
         currentLayout = layouts[layouts.length-1];
         $("#type").val(currentLayout.type);
         currentLayout.display();
-        if (layouts.length == 1) $("#back-icon").hide();
+        if (layouts.length == 1) {
+            $("#back-icon").hide();
+            $("#home-icon").hide();
+        }
+    });
+    $("#home-icon").on('click',function (e){
+        while (layouts.length > 1) {
+            layouts.pop();
+        }
+        currentLayout = layouts[layouts.length-1];
+        $("#type").val(currentLayout.type);
+        currentLayout.display();
+        if (layouts.length == 1) {
+            $("#back-icon").hide();
+            $("#home-icon").hide();
+        }
     });
     $("#type").change(function (e){
+        $("#header, #footer").hide();
         currentLayout.type=this.value;
         currentLayout.currentSlide=0;
         currentLayout.currentPage=0;
@@ -508,47 +602,177 @@
             hided = true;
         }, 2000);
     });
-    var stealthMode = true;
+    var stealthMode = !( navigator.userAgent.match(/Android/i)    ||
+                         navigator.userAgent.match(/webOS/i)      ||
+                         navigator.userAgent.match(/iPhone/i)     ||
+                         navigator.userAgent.match(/iPad/i)       ||
+                         navigator.userAgent.match(/iPod/i)       ||
+                         navigator.userAgent.match(/BlackBerry/i) ||
+                         navigator.userAgent.match(/Windows Phone/i));
     $(window).on('mouseleave blur focusout', function (e) {
         e.preventDefault();
         if (stealthMode) {
+            console.log("Hiding body");
             $('body').hide();
         }
     });
     $(window).on('mouseenter mouseover', function (e) {
         e.preventDefault();
         if (stealthMode) {
-          $('body').show();
+            console.log("Showing body");
+            $('body').show();
+            if (currentLayout.wasHidden) {
+                currentLayout.resize();
+            }
         }
+    });
+    // keybindings
+    $(document).on('keydown',function(event){
+        switch (event.which){
+            case 39:  // right
+            case 65:  // 'A'
+                currentLayout.show(1);
+                break;
+            case 37: // left
+            case 68: // 'D'
+                currentLayout.show(-1);
+                break;
+            case 81: // 'q'
+                // home
+                $("#home-icon").click();
+                break;
+            case 87: // 'w'
+                // back
+                $("#back-icon").click();
+                break;
+            case 69: // 'e'
+                // blog
+                $("#blog-name").click();
+            case 83: // 's'
+                // reblog
+                $("#reblogged-from").click();
+                break;
+            case 88: // 'x'
+                // src
+                $("#source").click();
+                break;
+            case 82: // 'r'
+                // all
+                $("#type").val("all").trigger('change');
+            case 70: // 'f'
+                // photo
+                $("#type").val("photo").trigger('change');
+                break;
+            case 86: // 'v'
+                // video
+                $("#type").val("video").trigger('change');
+                break;
+            case 32: // space
+                $("#content").click();
+                break;
+            case 67: // 'c'
+                currentLayout.seek(1);
+                break;
+            case 90: // 'z'
+                currentLayout.seek(-1);
+                break;
+            case 220: // '\'
+                stealthMode = !stealthMode;
+                break;
+            default:
+                break;
+        }
+    });
+    // mouse wheel
+    $(window).on('mousewheel DOMMouseScroll',function (e){
+        currentLayout.show(parseInt(e.originalEvent.wheelDelta || - e.originalEvent.detail));
+    });
+    // touch
+    var touchOff = false;
+    $(document).bind('touchstart', function (ev) {
+        if ( touchOff ) {return;}
+        var e = ev.originalEvent;
+        xDown = e.touches[0].clientX;
+        yDown = e.touches[0].clientY;
+    });
+    $(document).bind('touchmove', function (ev) {
+        if ( touchOff ) {return;}
+        var e = ev.originalEvent;
+        if ( ! xDown || ! yDown ) {return;}
+        xUp = e.touches[0].clientX;
+        yUp = e.touches[0].clientY;
+    });
+    $(document).bind('touchend', function (ev) {
+        if ( touchOff ) {return;}
+        if ( typeof xUp == 'undefined' || ! xUp || ! yUp ) {return;}
+        var xDiff = xDown - xUp;
+        var yDiff = yDown - yUp;
+        if ( Math.abs( xDiff ) > Math.abs( yDiff ) ) {
+            if ( xDiff > 25 ) {
+                currentLayout.show(-1);
+            } else if (xDiff < -25) {
+                currentLayout.show(1);
+            }
+        } else {
+            if ( yDiff > 100 ) {
+                // up swipe
+            } else if (yDiff < -100) {
+                // down swipe
+            }
+        }
+        xDown = null;
+        yDown = null;
+        xUp = null;
+        yUp = null;
     });
   });
   </script>
   <style type="text/css">
     * {
-	  margin: 0;
-      padding: 0;
-	  border: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
     }
     html,body {
-      height: 100%;
-      background:black;
+        height: 100%;
+        background:black;
+        touch-action: none;
+    }
+    a {
+        color:white;
     }
     #header {
-      height:50px;
-      width: 100%;
-      background: rgba(40, 40, 40, .5);
-      color:white;
-      position:fixed;
-      top: 0;
-      left:0;
-      z-index:100;
+        display:none;
+        min-height:50px;
+        width: 100%;
+        background: rgba(40, 40, 40, .5);
+        color:white;
+        position:fixed;
+        top: 0;
+        left:0;
+        z-index:1;
+        text-align:center;
     }
-    #header {
-        padding-left: 25px;
-    }
-    .header-text {
+    .header-container{
+        display:inline-block;
         line-height: 50px;
-        color: white;
+    }
+    #blogs {
+        float: left;
+        margin-left: 10px;
+    }
+    #date {
+        text-align:left;
+        margin:0 auto !important;
+        display:inline-block;
+        overflow: hidden;
+    }
+    #buttons{
+        float: right;
+        margin-right: 10px;
+    }
+    #buttons a {
+        text-decoration: none;
     }
     .svg-icon {
         fill: currentColor;
@@ -556,29 +780,11 @@
         width: 3ex;
         vertical-align: text-top;
     }
-    .svg-reblog-icon {
+    .svg-path-icon {
         display:none;
     }
-    #back-icon {
+    #back-icon, #home-icon {
         cursor: pointer;
-    }
-    #date {
-        display: inline-block;
-        width: 100%;
-        position: fixed;
-        text-align: center;
-        top: 0;
-        left: 0;
-        z-index: -1;
-    }
-    #buttons {
-        position: fixed;
-        top: 0;
-        right: 0;
-        padding-right: 50px;
-    }
-    #buttons a {
-       text-decoration: none;
     }
     #view-blog-name {
         display:none;
@@ -589,6 +795,9 @@
         padding-left: 1ex;
     }
     #view-blog-name:focus { outline: none; }
+    #view-blog-name::placeholder {
+        color: rgba(255, 255, 255, .7);
+    }
     select {
         border: 0.02px solid white;
         color: white;
@@ -598,7 +807,6 @@
         padding-left: 1ex;
     }
     select:focus { outline: none; }
-
     select option {
         color: white;
         background-color: black;
@@ -606,7 +814,7 @@
     #loader {
         display:none;
         position:fixed;
-        top:60px;
+        top:10px;
         left:10px;
         border: 0.2em solid #f3f3f3;
         border-top: 0.2em solid #333333;
@@ -614,28 +822,48 @@
         width: 1em;
         height: 1em;
         animation: spin 1s linear infinite;
+        z-index: 2;
     }
-
     @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
     #content {
-      height: 100%;
+        height: 100%;
     }
-    .photo {
-      display:block;
-      position: relative;
+    .photo,video {
+        display:block;
+        position: relative;
     }
-    video {
-      display:block;
-      position: relative;
+    #footer {
+        display:none;
+        min-height:0;
+        max-height:50%;
+        width: 100%;
+        background: rgba(40, 40, 40, .5);
+        color:white;
+        position:fixed;
+        bottom: 0;
+        left:0;
+        padding: 0 10px;
+        z-index:100;
+        overflow: hidden;
     }
   </style>
 </head>
 <body>
   <div id="header">
-    <svg id="back-icon" class="svg-icon svg-reblog-icon">
+    <div id="blogs">
+      <div id="blog" class="header-container">
+    <svg id="home-icon" class="svg-icon svg-path-icon">
+      <svg viewBox="0 0 100 100" version="1.1" x="0px" y="0px">
+        <g transform="translate(0.000000, 7.000000)">
+          <path d="M82.8622114,49.1091585 L51.1489041,24.3788258 C50.4414677,23.8271624 49.4496869,23.8271624 48.7420548,24.3788258 L17.0289432,49.1091585 C16.5534051,49.48 16.2753229,50.0492759 16.2753229,50.652407 L16.2753229,83.2238356 C16.2753229,84.3046575 17.1516438,85.1807828 18.2322701,85.1807828 L81.6588845,85.1807828 C82.7395108,85.1807828 83.6158317,84.3046575 83.6158317,83.2238356 L83.6158317,50.652407 C83.6158317,50.0492759 83.3377495,49.48 82.8622114,49.1091585"/>
+          <path d="M99.143092,38.3099217 L51.1544423,0.613835616 C50.4446575,0.0563013699 49.4464188,0.0563013699 48.7366341,0.613835616 L0.747984344,38.3099217 C0.339960861,38.6304697 0.0759686888,39.100137 0.0139334638,39.6154012 C-0.0479060665,40.1308611 0.0974951076,40.6496477 0.418043053,41.0576712 L7.23193738,49.7320352 C7.61823875,50.2234247 8.19221135,50.4801761 8.77225049,50.4801761 C9.19514677,50.4801761 9.62136986,50.3435812 9.97988258,50.0619765 L49.945636,18.6678474 L89.9113894,50.0619765 C90.3196086,50.3827202 90.8383953,50.5281213 91.3536595,50.4660861 C91.8691194,50.4042466 92.338591,50.1400587 92.6593346,49.7320352 L99.473229,41.0576712 C100.140744,40.2077691 99.9929941,38.9776321 99.143092,38.3099217"/>
+        </g>
+      </svg>
+    </svg>
+    <svg id="back-icon" class="svg-icon svg-path-icon">
       <svg x="0px" y="0px" viewBox="0 0 30 30" width="100%" height="100%">
         <g stroke="none" stroke-width="1" sketch:type="MSPage">
           <g sketch:type="MSArtboardGroup" transform="translate(-45.000000, -585.000000)">
@@ -645,7 +873,9 @@
       </svg>
     </svg>
     <a id="blog-name" class="header-text" href="#"></a>
-    <svg id="reblogged-from-icon" class="svg-icon svg-reblog-icon">
+      </div>
+      <div id="reblog" class="header-container">
+    <svg id="reblogged-from-icon" class="svg-icon svg-path-icon">
       <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
         <g>
           <polygon points="36.496,59.407 36.499,48.238 49.982,48.241 30.177,27.559 8.787,47.978 24.142,47.981    24.136,71.879 63.87,71.89 51.752,59.508  "/>
@@ -654,7 +884,9 @@
       </svg>
     </svg>
     <a id="reblogged-from" class="header-text" href="#"></a>
-    <svg id="source-icon" class="svg-icon svg-reblog-icon">
+      </div>
+      <div id="srcblog" class="header-container">
+    <svg id="source-icon" class="svg-icon svg-path-icon">
       <svg x="0px" y="0px" viewBox="0 0 96 96" width="100%" height="100%">
         <g>
           <path d="M28.4,35.2C24.7,39.5,22,45.6,22,53.3v16.2h17.7c2.9,0,5.2-2.3,5.2-5.2V46.4H31.9c0.7-2.7,1.9-4.9,3.4-6.7   c1.6-1.9,3.5-3.4,6.2-4.4c2-0.7,3.3-2.6,3.3-4.7v-3.9C36.6,27.9,32.1,30.8,28.4,35.2z"/>
@@ -663,8 +895,10 @@
       </svg>
     </svg>
     <a id="source" class="header-text" href="#"></a>
-    <a id="reblogged-from" class="header-text" href="#"></a>
-    <div id="buttons">
+      </div>
+    </div>
+      <div id="date" class="header-container"></div>
+      <div id="buttons" class="header-container">
       <input type="text" id="view-blog-name" placeholder="Blog name">
       <a id="view-blog" class="header-text" href="#">
         <svg id="view-blog-likes-icon" class="svg-icon">
@@ -674,9 +908,9 @@
         </svg>
       </a>
       <select id="type">
-        <option value="all">All </option>
-        <option value="photo">Photo</option>
-        <option value="video">Video</option>
+        <option value="all">all</option>
+        <option value="photo">photo</option>
+        <option value="video">video</option>
       </select>
       <a id="likes" class="header-text" href="#">
         <svg id="likes-icon" class="svg-icon">
@@ -697,15 +931,12 @@
           </svg>
         </svg>
       </a>
-    </div>
-  <span id="date" class="header-text"></span>
+      </div>
   </div>
   <div id="loader"></div>
   <div id="content">
     <!--<img class="photo" id="photo" src="https://78.media.tumblr.com/e571c5a59194a56d45230be599b97db4/tumblr_p5d0bdvDXG1vt4jtuo1_1280.jpg" />-->
   </div>
+  <div id="footer"></div>
 </body>
 </html>
-<?php
-      }
-?>
