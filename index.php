@@ -209,7 +209,7 @@ if (isset($_GET) && count($_GET)) {
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script type="text/javascript">
   $(document).ready(function(){
-
+    console.log("Doc ready");
     var currentLayout;
 
     var layouts = [];
@@ -252,7 +252,7 @@ if (isset($_GET) && count($_GET)) {
             });
         },
         response: function(data){
-            console.log("response");
+            console.log("Response");
             console.log(data.posts);
             switch (data.code) {
                 case 200:
@@ -288,10 +288,10 @@ if (isset($_GET) && count($_GET)) {
         },
         checkHidden: function() {
             if ($('body').is(":visible")) {
-                console.log("this.wasHidden = false;");
+                console.log("Was not hidden");
                 this.wasHidden = false;
             } else {
-                console.log("this.wasHidden = true;");
+                console.log("Was hidden");
                 this.wasHidden = true;
             }
         },
@@ -348,14 +348,24 @@ if (isset($_GET) && count($_GET)) {
                 $(this.iframe).prop("muted",false);
                 $(this.iframe).prop("preload","auto");
                 var _this = this;
+                var img = new Image();
+                img.src = $(this.iframe).attr('poster');
+                img.onload = function(){
+                    console.log("Poster loaded");
+                    _this.unlock();
+                };
+                $(this.iframe).find('source').last().on('error', function(e) {
+                    $("#content").empty().append($("#error-icon").clone());
+                    _this.unlock();
+                });
                 $(this.iframe).on("play",function (e){
                     _this.unlock();
                     $("#header").hide();
                     setTimeout(function(){
                         $(_this.iframe).prop("controls",false);
                     }, 2000);
-                });
-                $(this.iframe).on("ended",function (e){
+                })
+                .on("ended",function (e){
                     _this.next();
                     _this.display();
                 });
@@ -383,7 +393,7 @@ if (isset($_GET) && count($_GET)) {
             }
         },
         next: function(){
-            //console.log("next");
+            console.log("Next");
             if (this.currentSlide > this.slides.length/2) {
                 this.update();
                 this.updateLocked = true;
@@ -396,7 +406,7 @@ if (isset($_GET) && count($_GET)) {
             }
         },
         prev: function(){
-            //console.log("prev");
+            console.log("Prev");
             if (this.currentSlide > 0) {
                 this.currentSlide--;
                 return true;
@@ -409,7 +419,7 @@ if (isset($_GET) && count($_GET)) {
             if (this.wasHidden) {
                 return;
             }
-            console.log("this.resizing");
+            console.log("Resizing");
             var elmt = window, prop = "inner";
             if (!("innerWidth" in window)) {
                 elmt = document.documentElement || document.body;
@@ -505,8 +515,8 @@ if (isset($_GET) && count($_GET)) {
         }
     });
     $("#blog-name, #reblogged-from, #source, #likes, #view-blog").on('click',function (e){
-        //console.log("Clicked on " + $(this).html());
-        //console.log("with id " + this.id);
+        console.log("Clicked on " + $(this).html());
+        console.log("with id " + this.id);
         switch(this.id) {
             case 'likes':
                 layouts.push({
@@ -615,14 +625,14 @@ if (isset($_GET) && count($_GET)) {
     $(window).on('mouseleave blur focusout', function (e) {
         e.preventDefault();
         if (stealthMode) {
-            console.log("Hiding body");
+            //console.log("Hiding body");
             $('body').hide();
         }
     });
     $(window).on('mouseenter mouseover', function (e) {
         e.preventDefault();
         if (stealthMode) {
-            console.log("Showing body");
+            //console.log("Showing body");
             $('body').show();
             if (currentLayout.wasHidden) {
                 currentLayout.resize();
@@ -838,6 +848,13 @@ if (isset($_GET) && count($_GET)) {
         display:block;
         position: relative;
     }
+    #error-icon {
+        fill:grey;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
     #header,#footer {
         text-shadow: 1px 1px 3px black, -1px -1px 3px black, -1px 1px 3px black, 1px -1px 3px black;
     }
@@ -947,5 +964,12 @@ if (isset($_GET) && count($_GET)) {
     <!--<img class="photo" id="photo" src="https://78.media.tumblr.com/e571c5a59194a56d45230be599b97db4/tumblr_p5d0bdvDXG1vt4jtuo1_1280.jpg" />-->
   </div>
   <div id="footer"></div>
+<svg style="display:none" id="svg-icons">
+  <svg id="error-icon">
+    <svg viewBox="0 0 253 253" x="0px" y="0px">
+      <polygon points="86,127 0,41 41,0 127,86 213,0 253,41 167,127 253,213 213,253 127,167 41,253 0,213 "/>
+    </svg>
+  </svg>
+</svg>
 </body>
 </html>
