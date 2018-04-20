@@ -5,49 +5,41 @@
 //TODO: Open post on new page
 //TODO: When no more posts?
 //TODO: If no videos?
-        session_start();
 
-        require_once('vendor/autoload.php');
-        require_once("config.php");
 
-        $tmpToken = isset($_SESSION['tmp_oauth_token'])? $_SESSION['tmp_oauth_token'] : null;
-        $tmpTokenSecret = isset($_SESSION['tmp_oauth_token_secret'])? $_SESSION['tmp_oauth_token_secret'] : null;
-        $client = new Tumblr\API\Client($consumerKey, $consumerSecret, $tmpToken, $tmpTokenSecret);
-        // Change the base url
-        $requestHandler = $client->getRequestHandler();
-        $requestHandler->setBaseUrl('https://www.tumblr.com/');
-        if (!empty($_GET['oauth_verifier'])) {
-            // exchange the verifier for the keys
-            $verifier = trim($_GET['oauth_verifier']);
-            $resp = $requestHandler->request('POST', 'oauth/access_token', array('oauth_verifier' => $verifier));
-            $out = (string) $resp->body;
-            $data = array();
-            parse_str($out, $data);
-            unset($_SESSION['tmp_oauth_token']);
-            unset($_SESSION['tmp_oauth_token_secret']);
-            $_SESSION['Tumblr_oauth_token'] = $data['oauth_token'];
-            $_SESSION['Tumblr_oauth_token_secret'] = $data['oauth_token_secret'];
-            header('Location: ./');
-            exit;
-        }
-        if (empty($_SESSION['Tumblr_oauth_token']) || empty($_SESSION['Tumblr_oauth_token_secret'])) {
-            header('Content-Type: text/html; charset=utf-8');
-            // start the old gal up
-            $callbackUrl = $_SERVER['REQUEST_SCHEME']."://".$_SERVER['SERVER_NAME'].dirname($_SERVER['SCRIPT_NAME']);
-            $resp = $requestHandler->request('POST', 'oauth/request_token', array(
-                    'oauth_callback' => $callbackUrl
-                ));
-            // Get the result
-            $result = (string) $resp->body;
-            parse_str($result, $keys);
-            $_SESSION['tmp_oauth_token'] = $keys['oauth_token'];
-            $_SESSION['tmp_oauth_token_secret'] = $keys['oauth_token_secret'];
-            $url = 'https://www.tumblr.com/oauth/authorize?oauth_token=' . $keys['oauth_token'];
-            echo '<a href="'.$url.'">Connect Tumblr</a>';
-            exit;
-        }
+if (isset($_GET) && count($_GET)) {
 
-    if (isset($_GET) && count($_GET)) {
+    $action = (isset($_GET['action']) ? $_GET['action'] : "");
+    $page = (isset($_GET['page']) ? $_GET['page'] : 1);
+    $response = new stdClass;
+
+    session_start();
+
+    require_once('vendor/autoload.php');
+    require_once("config.php");
+
+    $tmpToken = isset($_SESSION['tmp_oauth_token'])? $_SESSION['tmp_oauth_token'] : null;
+    $tmpTokenSecret = isset($_SESSION['tmp_oauth_token_secret'])? $_SESSION['tmp_oauth_token_secret'] : null;
+    $client = new Tumblr\API\Client($consumerKey, $consumerSecret, $tmpToken, $tmpTokenSecret);
+    // Change the base url
+    $requestHandler = $client->getRequestHandler();
+    $requestHandler->setBaseUrl('https://www.tumblr.com/');
+    if (!empty($_GET['oauth_verifier'])) {
+        // exchange the verifier for the keys
+        $verifier = trim($_GET['oauth_verifier']);
+        $resp = $requestHandler->request('POST', 'oauth/access_token', array('oauth_verifier' => $verifier));
+        $out = (string) $resp->body;
+        $data = array();
+        parse_str($out, $data);
+        unset($_SESSION['tmp_oauth_token']);
+        unset($_SESSION['tmp_oauth_token_secret']);
+        $_SESSION['Tumblr_oauth_token'] = $data['oauth_token'];
+        $_SESSION['Tumblr_oauth_token_secret'] = $data['oauth_token_secret'];
+        header('Location: ./');
+        exit;
+    }
+
+    if ( !(empty($_SESSION['Tumblr_oauth_token']) || empty($_SESSION['Tumblr_oauth_token_secret'])) ) {
 
         $client = new Tumblr\API\Client(
             $consumerKey,
@@ -58,11 +50,7 @@
 
         $clientInfo = $client->getUserInfo();
 
-        header('Content-Type: application/json; charset=utf-8');
-        $action = (!empty($_GET['action']) ? $_GET['action'] : "dash");
-        $page = (!empty($_GET['page']) ? $_GET['page'] : 1);
         $options['limit'] = 20;
-        $obj = new stdClass;
         switch ($action) {
             case "dash":
             case "blog":
@@ -86,7 +74,7 @@
                         if (!empty($_GET['blog'])) {
                             $blog = $_GET['blog'];
                         } else {
-                            exit;
+                            $code = 400;
                         }
                         $response = $client->getBlogPosts($blog, $options);
                         $posts = $response->posts;
@@ -98,13 +86,14 @@
                             $response = $client->getLikedPosts($options);
                             $posts = $response->liked_posts;
                         } else {
-                            echo json_encode([] ,JSON_UNESCAPED_UNICODE);
-                            exit;
+                            $code = 400;
                         }
                     break;
                 }
-                $res_array = [];
+                //$res_array = [];
+                $response->posts = [];
                 foreach ($posts as $post) {
+                    $obj = new stdClass;
                     $obj->blog_name = $post->blog_name;
                     $obj->type = $post->type;
                     $obj->id = $post->id;
@@ -118,7 +107,7 @@
                         case "photo":
                             foreach ($post->photos as $photo) {
                                 $obj->src = $photo->original_size->url;
-                                $res_array[] = clone $obj;
+                                $response->posts[] = clone $obj;
                             }
                             break;
                         case "video":
@@ -126,13 +115,14 @@
                             $obj->html5_capable = (isset($post->html5_capable) ? $post->html5_capable : "" );
                             $obj->player = (isset($post->player) ? $post->player[count($post->player)-1]->embed_code : "" );
                             $obj->video_url = (isset($post->video_url) ? $post->video_url : "" );
-                            $res_array[] = clone $obj;
+                            $response->posts[] = clone $obj;
                             break;
                         default:
                             break;
                     }
                 }
-                echo json_encode($res_array ,JSON_UNESCAPED_UNICODE);
+                //echo json_encode($res_array ,JSON_UNESCAPED_UNICODE);
+                $code = 200;
                 break;
             case "followed":
                 $obj = new stdClass;
@@ -144,13 +134,53 @@
                     $followedBlogs = $client->getFollowedBlogs($options);
                     $obj->blogs = array_merge($obj->blogs,$followedBlogs->blogs);
                 }
-                echo json_encode($obj ,JSON_UNESCAPED_UNICODE);
+                $response->followed_blogs = $obj;
+                $code = 200;
                 break;
             default:
-                echo "Wrong request.";
+                $code = 405;
                 break;
         }
+
     } else {
+        // start the old gal up
+        $callbackUrl = $_SERVER['REQUEST_SCHEME']."://".$_SERVER['SERVER_NAME'].dirname($_SERVER['SCRIPT_NAME']);
+        $resp = $requestHandler->request('POST', 'oauth/request_token', array('oauth_callback' => $callbackUrl));
+        // Get the result
+        $result = (string) $resp->body;
+        parse_str($result, $keys);
+        $_SESSION['tmp_oauth_token'] = $keys['oauth_token'];
+        $_SESSION['tmp_oauth_token_secret'] = $keys['oauth_token_secret'];
+        $url = 'https://www.tumblr.com/oauth/authorize?oauth_token=' . $keys['oauth_token'];
+        $code = 511;
+    }
+
+    switch ($code) {
+        case 200:
+            $response->msg = "OK";
+            break;
+        case 400:
+            $response->msg = "Bad Request";
+            break;
+        case 405:
+            $response->msg = "Method Not Allowed";
+            break;
+        case 511:
+            $response->auth_url = $url;
+            $response->msg = "Authentication Required";
+            break;
+        default:
+            $response->msg = "Unknown Error";
+            break;
+    }
+
+    $response->code = $code;
+
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($response ,JSON_UNESCAPED_UNICODE);
+
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -212,14 +242,28 @@
         },
         response: function(data){
             console.log("response");
-            console.log("Get " + data.length + " posts");
-            console.log(data);
-            $("#loader").hide();
-            this.slides = this.slides.concat(data);
-            console.log("Total posts: " + this.slides.length);
-            this.updateLocked = false;
-            if (this.currentSlide == 0) {
-                this.display();
+            console.log(data.posts);
+            switch (data.code) {
+                case 200:
+                    if (data.hasOwnProperty('posts')) {
+                        console.log("Get " + data.posts.length + " posts");
+
+                        $("#loader").hide();
+                        this.slides = this.slides.concat(data.posts);
+                        console.log("Total posts: " + this.slides.length);
+                        this.updateLocked = false;
+                        if (this.currentSlide == 0) {
+                            this.display();
+                        }
+                    }
+                    break;
+                case 511:
+                    if (data.hasOwnProperty('auth_url')) {
+                        window.location.href = data.auth_url;
+                    }
+                    break;
+                default:
+                    break;
             }
         },
         lock: function() {
@@ -892,6 +936,3 @@
   <div id="footer"></div>
 </body>
 </html>
-<?php
-      }
-?>
