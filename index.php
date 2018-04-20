@@ -10,7 +10,7 @@
 if (isset($_GET) && count($_GET)) {
 
     $action = (isset($_GET['action']) ? $_GET['action'] : "");
-    $page = (isset($_GET['page']) ? $_GET['page'] : 1);
+    //$page = (isset($_GET['page']) ? $_GET['page'] : 1);
     $response = new stdClass;
 
     session_start();
@@ -55,6 +55,7 @@ if (isset($_GET) && count($_GET)) {
             case "dash":
             case "blog":
             case "likes":
+                //$options['offset']=($page-1)*$options['limit'];
                 $options['reblog_info'] = true;
                 switch ($action) {
                     case "dash":
@@ -219,6 +220,7 @@ if (isset($_GET) && count($_GET)) {
         blog:"",
         type:"all",
         currentSlide:0,
+	//currentPage:0,
         before:"",
         slides: [],
         iframe: null,
@@ -233,6 +235,7 @@ if (isset($_GET) && count($_GET)) {
                 return;
             }
             $("#loader").show();
+            //this.currentPage++;
             this.before = this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.slides[this.slides.length-1].id : "";
             console.log("Before " + this.before);
             $.ajax({
@@ -241,6 +244,7 @@ if (isset($_GET) && count($_GET)) {
                 async: true,
                 data: {action: this.layoutType,
                        blog:   this.blog,
+                       //page:   this.currentPage,
                        before:   this.before,
                        type:   this.type},
                 context: this,
@@ -254,7 +258,6 @@ if (isset($_GET) && count($_GET)) {
                 case 200:
                     if (data.hasOwnProperty('posts')) {
                         console.log("Get " + data.posts.length + " posts");
-
                         $("#loader").hide();
                         this.slides = this.slides.concat(data.posts);
                         console.log("Total posts: " + this.slides.length);
@@ -357,7 +360,7 @@ if (isset($_GET) && count($_GET)) {
                     _this.display();
                 });
             } else {
-                //console.log(this.slides[this.currentSlide].type);
+                console.log("Video type: " + this.slides[this.currentSlide].type);
                 //console.log(this.slides[this.currentSlide].video_type);
                 //console.log(this.slides[this.currentSlide].player);
                 this.unlock();
@@ -835,6 +838,9 @@ if (isset($_GET) && count($_GET)) {
         display:block;
         position: relative;
     }
+    #header,#footer {
+        text-shadow: 1px 1px 3px black, -1px -1px 3px black, -1px 1px 3px black, 1px -1px 3px black;
+    }
     #footer {
         display:none;
         min-height:0;
@@ -848,6 +854,9 @@ if (isset($_GET) && count($_GET)) {
         padding: 0 10px;
         z-index:100;
         overflow: hidden;
+    }
+    #footer a {
+        color:#8cbfd9;
     }
   </style>
 </head>
@@ -908,7 +917,7 @@ if (isset($_GET) && count($_GET)) {
         </svg>
       </a>
       <select id="type">
-        <option value="all">all</option>
+        <option value="all">both</option>
         <option value="photo">photo</option>
         <option value="video">video</option>
       </select>
