@@ -220,7 +220,7 @@ if (isset($_GET) && count($_GET)) {
         blog:"",
         type:"all",
         currentSlide:0,
-	//currentPage:0,
+        //currentPage:0,
         before:"",
         slides: [],
         iframe: null,
