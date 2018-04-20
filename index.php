@@ -60,10 +60,18 @@ if (isset($_GET) && count($_GET)) {
                 switch ($action) {
                     case "dash":
                     case "blog":
+                        //if (isset($_GET['before'])) {
+                        //    $options['before_id'] = $_GET['before'];
+                        //}
                         if (isset($_GET['type']) && ($_GET['type'] == "photo" || $_GET['type'] == "video")) {
                             $options['type'] = $_GET['type'];
                         }
                     break;
+                    //case "likes":
+                    //    if (isset($_GET['before'])) {
+                    //        $options['before'] = $_GET['before'];
+                    //    }
+                    //break;
                 }
                 switch ($action) {
                     case "dash":
@@ -200,7 +208,6 @@ if (isset($_GET) && count($_GET)) {
   <!--<script type="text/javascript" src="index.js"></script>-->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script type="text/javascript">
-
   $(document).ready(function(){
     console.log("Doc ready");
     var currentLayout;
@@ -214,6 +221,7 @@ if (isset($_GET) && count($_GET)) {
         type:"all",
         currentSlide:0,
         currentPage:0,
+        //before:"",
         slides: [],
         iframe: null,
         locked: false,
@@ -228,6 +236,8 @@ if (isset($_GET) && count($_GET)) {
             }
             $("#loader").show();
             this.currentPage++;
+            //this.before = this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.slides[this.slides.length-1].id : "";
+            //console.log("Before " + this.before);
             $.ajax({
                 dataType: "json",
                 url: "./index.php",
@@ -235,6 +245,7 @@ if (isset($_GET) && count($_GET)) {
                 data: {action: this.layoutType,
                        blog:   this.blog,
                        page:   this.currentPage,
+                       //before:   this.before,
                        type:   this.type},
                 context: this,
                 success: this.response
@@ -247,7 +258,6 @@ if (isset($_GET) && count($_GET)) {
                 case 200:
                     if (data.hasOwnProperty('posts')) {
                         console.log("Get " + data.posts.length + " posts");
-
                         $("#loader").hide();
                         this.slides = this.slides.concat(data.posts);
                         console.log("Total posts: " + this.slides.length);
@@ -350,7 +360,7 @@ if (isset($_GET) && count($_GET)) {
                     _this.display();
                 });
             } else {
-                //console.log(this.slides[this.currentSlide].type);
+                console.log("Video type: " + this.slides[this.currentSlide].type);
                 //console.log(this.slides[this.currentSlide].video_type);
                 //console.log(this.slides[this.currentSlide].player);
                 this.unlock();
@@ -719,18 +729,17 @@ if (isset($_GET) && count($_GET)) {
         yUp = null;
     });
   });
-
   </script>
   <style type="text/css">
     * {
-    	margin: 0;
+        margin: 0;
         padding: 0;
-	    border: 0;
+        border: 0;
     }
     html,body {
-          height: 100%;
-          background:black;
-          touch-action: none;
+        height: 100%;
+        background:black;
+        touch-action: none;
     }
     a {
         color:white;
@@ -829,6 +838,9 @@ if (isset($_GET) && count($_GET)) {
         display:block;
         position: relative;
     }
+    #header,#footer {
+        text-shadow: 1px 1px 3px black, -1px -1px 3px black, -1px 1px 3px black, 1px -1px 3px black;
+    }
     #footer {
         display:none;
         min-height:0;
@@ -842,6 +854,9 @@ if (isset($_GET) && count($_GET)) {
         padding: 0 10px;
         z-index:100;
         overflow: hidden;
+    }
+    #footer a {
+        color:#8cbfd9;
     }
   </style>
 </head>
@@ -902,7 +917,7 @@ if (isset($_GET) && count($_GET)) {
         </svg>
       </a>
       <select id="type">
-        <option value="all">all</option>
+        <option value="all">both</option>
         <option value="photo">photo</option>
         <option value="video">video</option>
       </select>
@@ -928,8 +943,6 @@ if (isset($_GET) && count($_GET)) {
       </div>
   </div>
   <div id="loader"></div>
-
-
   <div id="content">
     <!--<img class="photo" id="photo" src="https://78.media.tumblr.com/e571c5a59194a56d45230be599b97db4/tumblr_p5d0bdvDXG1vt4jtuo1_1280.jpg" />-->
   </div>
