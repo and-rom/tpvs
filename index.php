@@ -46,6 +46,9 @@
             echo '<a href="'.$url.'">Connect Tumblr</a>';
             exit;
         }
+
+    if (isset($_GET) && count($_GET)) {
+
         $client = new Tumblr\API\Client(
             $consumerKey,
             $consumerSecret,
@@ -53,9 +56,8 @@
             $_SESSION['Tumblr_oauth_token_secret']
         );
 
-    $clientInfo = $client->getUserInfo();
+        $clientInfo = $client->getUserInfo();
 
-    if (isset($_GET) && count($_GET)) {
         header('Content-Type: application/json; charset=utf-8');
         $action = (!empty($_GET['action']) ? $_GET['action'] : "dash");
         $page = (!empty($_GET['page']) ? $_GET['page'] : 1);
