@@ -10,7 +10,11 @@
 if (isset($_GET) && count($_GET)) {
 
     $action = (isset($_GET['action']) ? $_GET['action'] : "");
+<<<<<<< HEAD
     $page = (isset($_GET['page']) ? $_GET['page'] : 1);
+=======
+    //$page = (isset($_GET['page']) ? $_GET['page'] : 1);
+>>>>>>> 8190a69f5c5dcdb7ce33bf236a12d7e3f381d295
     $response = new stdClass;
 
     session_start();
@@ -55,23 +59,41 @@ if (isset($_GET) && count($_GET)) {
             case "dash":
             case "blog":
             case "likes":
+<<<<<<< HEAD
                 $options['offset']=($page-1)*$options['limit'];
+=======
+                //$options['offset']=($page-1)*$options['limit'];
+>>>>>>> 8190a69f5c5dcdb7ce33bf236a12d7e3f381d295
                 $options['reblog_info'] = true;
                 switch ($action) {
                     case "dash":
                     case "blog":
+<<<<<<< HEAD
                         //if (isset($_GET['before'])) {
                         //    $options['before_id'] = $_GET['before'];
                         //}
+=======
+                        if (isset($_GET['before'])) {
+                            $options['before_id'] = $_GET['before'];
+                        }
+>>>>>>> 8190a69f5c5dcdb7ce33bf236a12d7e3f381d295
                         if (isset($_GET['type']) && ($_GET['type'] == "photo" || $_GET['type'] == "video")) {
                             $options['type'] = $_GET['type'];
                         }
                     break;
+<<<<<<< HEAD
                     //case "likes":
                     //    if (isset($_GET['before'])) {
                     //        $options['before'] = $_GET['before'];
                     //    }
                     //break;
+=======
+                    case "likes":
+                        if (isset($_GET['before'])) {
+                            $options['before'] = $_GET['before'];
+                        }
+                    break;
+>>>>>>> 8190a69f5c5dcdb7ce33bf236a12d7e3f381d295
                 }
                 switch ($action) {
                     case "dash":
@@ -220,8 +242,13 @@ if (isset($_GET) && count($_GET)) {
         blog:"",
         type:"all",
         currentSlide:0,
+<<<<<<< HEAD
         currentPage:0,
         //before:"",
+=======
+        //currentPage:0,
+        before:"",
+>>>>>>> 8190a69f5c5dcdb7ce33bf236a12d7e3f381d295
         slides: [],
         iframe: null,
         locked: false,
@@ -235,17 +262,28 @@ if (isset($_GET) && count($_GET)) {
                 return;
             }
             $("#loader").show();
+<<<<<<< HEAD
             this.currentPage++;
             //this.before = this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.slides[this.slides.length-1].id : "";
             //console.log("Before " + this.before);
+=======
+            //this.currentPage++;
+            this.before = this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.slides[this.slides.length-1].id : "";
+            console.log("Before " + this.before);
+>>>>>>> 8190a69f5c5dcdb7ce33bf236a12d7e3f381d295
             $.ajax({
                 dataType: "json",
                 url: "./index.php",
                 async: true,
                 data: {action: this.layoutType,
                        blog:   this.blog,
+<<<<<<< HEAD
                        page:   this.currentPage,
                        //before:   this.before,
+=======
+                       //page:   this.currentPage,
+                       before:   this.before,
+>>>>>>> 8190a69f5c5dcdb7ce33bf236a12d7e3f381d295
                        type:   this.type},
                 context: this,
                 success: this.response
