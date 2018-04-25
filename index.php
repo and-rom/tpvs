@@ -816,7 +816,7 @@ if (isset($_GET) && count($_GET)) {
                          navigator.userAgent.match(/iPad/i)       ||
                          navigator.userAgent.match(/iPod/i)       ||
                          navigator.userAgent.match(/BlackBerry/i) ||
-                         navigator.userAgent.match(/Windows Phone/i));stealthMode = false;
+                         navigator.userAgent.match(/Windows Phone/i));
     $(window).on('mouseleave blur focusout', function (e) {
         e.preventDefault();
         if (stealthMode) {
