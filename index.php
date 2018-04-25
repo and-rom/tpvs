@@ -1,6 +1,5 @@
 <?php
 //TODO: Show following blogs on side panel with scroll
-//TODO: Follow action
 
 if (isset($_GET) && count($_GET)) {
 
@@ -72,7 +71,7 @@ if (isset($_GET) && count($_GET)) {
                         $posts = $result->posts;
                     break;
                     case "blog":
-                        if (!empty($_GET['blog'])) {
+                        if (isset($_GET['blog'])) {
                             $blog = $_GET['blog'];
                         } else {
                             $code = 400;
@@ -162,9 +161,21 @@ if (isset($_GET) && count($_GET)) {
                     } catch (Exception $e) {
                         $code = $e->getCode();
                     }
+                } else {
+                    $code = 400;
                 }
                 break;
             case "follow":
+                if (isset($_GET['blog'])) {
+                    try {
+                        $result = $client->follow($_GET['blog']);
+                        $code = 202;
+                    } catch (Exception $e) {
+                        $code = $e->getCode();
+                    }
+                } else {
+                    $code = 400;
+                }
                 break;
             default:
                 $code = 405;
@@ -190,6 +201,9 @@ if (isset($_GET) && count($_GET)) {
             break;
         case 201:
             $response->msg = $msg;
+            break;
+        case 202:
+            $response->msg = "Following";
             break;
         case 400:
             $response->msg = "Bad Request";
@@ -331,7 +345,7 @@ if (isset($_GET) && count($_GET)) {
                     }
                     this.updateLocked = false;
                     this.clearPostInfo();
-                    $("#header").hide();
+                    $("#header").show();
                     break;
                 case 511:
                     console.log(data);
@@ -802,7 +816,7 @@ if (isset($_GET) && count($_GET)) {
         var code = (e.keyCode ? e.keyCode : e.which);
         if (e.altKey && code == 81) {
             enabled = !enabled;
-            console.log("Hot keys " + (enabled ? "enabled" : "disabled"));
+            setMessage("Hot keys " + (enabled ? "enabled" : "disabled"));
             return;
         }
         if (enabled) switch (code){
@@ -846,8 +860,11 @@ if (isset($_GET) && count($_GET)) {
                 break;
             case 84: // 't'
                 // open post
-                console.log($("#open-post").attr("href"));
                 $("#open-post").click();
+                break;
+            case 76: // 'l'
+                // like post
+                $("#like-post").click();
                 break;
             case 32: // space
                 $("#content").click();
@@ -1136,6 +1153,14 @@ if (isset($_GET) && count($_GET)) {
           </svg>
         </svg>
       </a>
+      <a id="like-post" class="header-text" href="#">
+        <svg id="like-post-icon" class="svg-icon">
+          <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
+            <path d="M 30.267578,17.945312 C 29.213672,17.961328 28.125,18.075781 27,18.300781 c -9,1.8 -15.8,9.698438 -16,18.898438 0,2.7 0.500391,5.301562 1.400391,7.601562 2.5,6.1 23.10039,25.2 33.40039,35.5 2.3,2.3 5.485219,2.3 7.785219,0 l 0,-4.326172 0,-8.267609 -18.957,0 0,-21.375 18.957,0 0,-18.957 21.375,0 0,18.957 c 11.687468,0 0,0 11.687468,0 0.748416,-1.040852 0.657618,-0.81502 0.951141,-1.531219 1,-2.4 1.500391,-4.901562 1.400391,-7.601562 -0.1,-9.2 -6.9,-16.998438 -16,-18.898438 -9,-1.8 -15.7,3.498828 -20.5,9.298828 -1.3,1.6 -3.7,1.6 -5,0 -4.2,-5.075 -9.855078,-9.766406 -17.232422,-9.654297 z" />
+            <path d="m 58.586125,32.374857 0,18.957416 -18.957421,0 0,11.375 18.957421,0 0,18.9588 11.375,0 0,-18.9588 18.95743,0 0,-11.375 -18.95743,0 0,-18.957416 -11.375,0 z" />
+          </svg>
+        </svg>
+      </a>
       <a id="following" class="header-text" href="#">
         <svg id="following-icon" class="svg-icon">
           <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
@@ -1144,17 +1169,18 @@ if (isset($_GET) && count($_GET)) {
           </svg>
         </svg>
       </a>
+      <a id="follow" class="header-text" href="#">
+        <svg id="follow-icon" class="svg-icon">
+          <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
+            <path d="m 1.25,33.75 16.25,0 0,-16.25 -16.25,0 z m 0,24.375 16.25,0 0,-16.25 -16.25,0 z m 0,24.375 16.25,0 0,-16.25 -16.25,0 z m 27.084,-65 0,16.25 70.416,0 0,-16.25 z m 0,40.625 18.276169,0 0,-16.25 -18.276169,0 z m 0,24.375 18.276169,0 0,-16.25 -18.276169,0 z" />
+            <path d="m 68.41757,35.208784 0,18.957416 -18.95742,0 0,11.375 18.95742,0 0,18.9588 11.375,0 0,-18.9588 18.95743,0 0,-11.375 -18.95743,0 0,-18.957416 -11.375,0 z" />
+          </svg>
+        </svg>
+      </a>
       <a id="open-post" class="header-text" href="#">
         <svg id="open-post-icon" class="svg-icon">
           <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
             <path d="m 65,17.999985 0,8.875 c -13.1574,3.3428 -31.9085,12.29 -38,31.12503 15.2216,-13.35813 36.7436,-11.90278 38,-11.84378 l 0,8.87498 24,-18.49998 z m -50,6 c -2.0943,2.1e-4 -3.9998,1.90566 -4,4 l 0,50.00003 c 2e-4,2.0943 1.9057,3.9998 4,4 l 52,0 c 2.0943,-2e-4 3.9998,-1.9057 4,-4 l 0,-22.5625 -3.5625,2.75 -4.4375,3.4375 0,12.375 -44,0 0,-42.00003 24.0938,0 c 5.8517,-3.74585 12.0628,-6.32105 17.625,-8 z" />
-          </svg>
-        </svg>
-      </a>
-      <a id="like-post" class="header-text" href="#">
-        <svg id="like-post-icon" class="svg-icon">
-          <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
-            <path d="M94.467,39.192c0,7.43-3.639,13.962-9.173,18.074l0.063,0.038l-2.537,1.959  c-0.754-0.398-1.6-0.646-2.512-0.646h-7.234v-7.235c0-2.986-2.421-5.407-5.407-5.407c-2.985,0-5.407,2.421-5.407,5.407v7.235h-7.234  c-2.986,0-5.407,2.421-5.407,5.406c0,2.987,2.421,5.407,5.407,5.407h7.234v5.715l-11.055,8.539L17.06,57.305l0.063-0.038  C11.595,53.154,7.95,46.622,7.95,39.192c0-12.458,10.102-22.565,22.572-22.565c9.268,0,17.208,5.597,20.683,13.583  c3.475-7.985,11.429-13.583,20.696-13.583C84.359,16.627,94.467,26.735,94.467,39.192z M80.309,60.209h-8.825v-8.826  c0-2.107-1.709-3.816-3.816-3.816c-2.108,0-3.816,1.709-3.816,3.816v8.826h-8.825c-2.107,0-3.816,1.709-3.816,3.815  c0,2.108,1.709,3.817,3.816,3.817h8.825v8.824c0,2.109,1.708,3.818,3.816,3.818c2.107,0,3.816-1.709,3.816-3.818v-8.824h8.825  c2.108,0,3.817-1.709,3.817-3.817C84.126,61.918,82.417,60.209,80.309,60.209z"/>
           </svg>
         </svg>
       </a>
