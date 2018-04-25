@@ -2,7 +2,6 @@
 //TODO: Show following blogs on side panel with scroll
 //TODO: Follow action
 //TODO: Like action
-//TODO: Open post on new page
 
 if (isset($_GET) && count($_GET)) {
 
@@ -102,6 +101,7 @@ if (isset($_GET) && count($_GET)) {
                     $obj->blog_name = $post->blog_name;
                     $obj->type = $post->type;
                     $obj->id = $post->id;
+                    $obj->post_url = $post->post_url;
                     $obj->timestamp = $post->timestamp;
                     $obj->reblog_key = $post->reblog_key;
                     $obj->liked_timestamp = (isset($post->liked_timestamp) ? $post->liked_timestamp : "" );
@@ -324,6 +324,7 @@ if (isset($_GET) && count($_GET)) {
             }
 
             $("#date").html(this.age(this.slides[this.currentSlide].timestamp));
+            $("#open-post").attr("href", this.slides[this.currentSlide].post_url);
             $("#footer").html(this.slides[this.currentSlide].caption);
         },
         displayPhoto: function() {
@@ -386,7 +387,6 @@ if (isset($_GET) && count($_GET)) {
                 });
                 break;
               case "vimeo":
-              case "unknown":
                 if (!this.slides[this.currentSlide].player) {
                     $("#content").empty().append($("#error-icon").clone());
                     this.unlock();
@@ -401,7 +401,7 @@ if (isset($_GET) && count($_GET)) {
                 console.log("Video type: " + this.slides[this.currentSlide].video_type);
                 //console.log(this.slides[this.currentSlide].video_type);
                 console.log(this.slides[this.currentSlide].player);
-                $("#content").empty();
+                $("#content").empty().append($("#error-icon").clone());
                 this.unlock();
               break;
             }
@@ -747,7 +747,7 @@ if (isset($_GET) && count($_GET)) {
         }
     });
     // mouse wheel
-    $(window).on('mousewheel DOMMouseScroll',function (e){
+    $("#content").on('mousewheel DOMMouseScroll',function (e){
         currentLayout.show(parseInt(e.originalEvent.wheelDelta || - e.originalEvent.detail));
     });
     /*
@@ -815,13 +815,15 @@ if (isset($_GET) && count($_GET)) {
         display:none;
         min-height:50px;
         width: 100%;
-        background: rgba(40, 40, 40, .5);
-        color:white;
-        position:fixed;
+        position: relative;
         top: 0;
         left:0;
-        z-index:1;
         text-align:center;
+    }
+    #header:after {
+        content: '';
+        display: block;
+        clear: both;
     }
     .header-container{
         display:inline-block;
@@ -834,7 +836,6 @@ if (isset($_GET) && count($_GET)) {
     #date {
         text-align:left;
         margin:0 auto !important;
-        display:inline-block;
         overflow: hidden;
     }
     #buttons{
@@ -898,7 +899,16 @@ if (isset($_GET) && count($_GET)) {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
+    #messages {
+        display:none;
+        position: relative;
+    }
     #content {
+        height: 100%;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
         height: 100%;
     }
     .photo,video,iframe {
@@ -922,20 +932,27 @@ if (isset($_GET) && count($_GET)) {
     #footer {
         display:none;
         min-height:0;
-        max-height:50%;
         width: 100%;
+        box-sizing: border-box;
         background: rgba(40, 40, 40, .5);
-        color:white;
         position:fixed;
         bottom: 0;
         left:0;
         padding: 0 10px;
-        z-index:100;
-        overflow: hidden;
     }
     #footer a {
         color:#8cbfd9;
     }
+    #header, #messages, #footer {
+        max-height:50%;
+        overflow-y: scroll;
+        color:white;
+        background: rgba(40, 40, 40, .5);
+        z-index:1;
+    }
+    #header::-webkit-scrollbar, #messages::-webkit-scrollbar, #footer::-webkit-scrollbar {
+    display: none;
+}
   </style>
 </head>
 <body>
@@ -943,20 +960,14 @@ if (isset($_GET) && count($_GET)) {
     <div id="blogs">
       <div id="blog" class="header-container">
     <svg id="home-icon" class="svg-icon svg-path-icon">
-      <svg viewBox="0 0 100 100" version="1.1" x="0px" y="0px">
-        <g transform="translate(0.000000, 7.000000)">
-          <path d="M82.8622114,49.1091585 L51.1489041,24.3788258 C50.4414677,23.8271624 49.4496869,23.8271624 48.7420548,24.3788258 L17.0289432,49.1091585 C16.5534051,49.48 16.2753229,50.0492759 16.2753229,50.652407 L16.2753229,83.2238356 C16.2753229,84.3046575 17.1516438,85.1807828 18.2322701,85.1807828 L81.6588845,85.1807828 C82.7395108,85.1807828 83.6158317,84.3046575 83.6158317,83.2238356 L83.6158317,50.652407 C83.6158317,50.0492759 83.3377495,49.48 82.8622114,49.1091585"/>
-          <path d="M99.143092,38.3099217 L51.1544423,0.613835616 C50.4446575,0.0563013699 49.4464188,0.0563013699 48.7366341,0.613835616 L0.747984344,38.3099217 C0.339960861,38.6304697 0.0759686888,39.100137 0.0139334638,39.6154012 C-0.0479060665,40.1308611 0.0974951076,40.6496477 0.418043053,41.0576712 L7.23193738,49.7320352 C7.61823875,50.2234247 8.19221135,50.4801761 8.77225049,50.4801761 C9.19514677,50.4801761 9.62136986,50.3435812 9.97988258,50.0619765 L49.945636,18.6678474 L89.9113894,50.0619765 C90.3196086,50.3827202 90.8383953,50.5281213 91.3536595,50.4660861 C91.8691194,50.4042466 92.338591,50.1400587 92.6593346,49.7320352 L99.473229,41.0576712 C100.140744,40.2077691 99.9929941,38.9776321 99.143092,38.3099217"/>
-        </g>
+      <svg viewBox="0 0 100 100" version="1.1" x="0px" y="0px" width="100%" height="100%">
+        <path d="M 82.916596,56.420924 51.203289,31.690592 c -0.707436,-0.551664 -1.699217,-0.551664 -2.406849,0 L 17.083328,56.420924 c -0.475538,0.370842 -0.75362,0.940118 -0.75362,1.543249 l 0,32.571429 c 0,1.080822 0.876321,1.956947 1.956947,1.956947 l 63.426614,0 c 1.080627,0 1.956948,-0.876125 1.956948,-1.956947 l 0,-32.571429 c 0,-0.603131 -0.278083,-1.172407 -0.753621,-1.543249" />
+        <path d="M 99.197477,45.621688 51.208827,7.9256021 c -0.709785,-0.557535 -1.708023,-0.557535 -2.417808,0 L 0.80237008,45.621688 c -0.40802348,0.320548 -0.67201565,0.790215 -0.73405088,1.305479 -0.06183953,0.51546 0.08356165,1.034247 0.40410959,1.44227 l 6.81389441,8.674364 c 0.3863013,0.49139 0.9602739,0.748141 1.5403131,0.748141 0.4228963,0 0.8491194,-0.136595 1.2076317,-0.4182 L 50.000021,25.979613 89.965774,57.373742 c 0.40822,0.320744 0.927006,0.466145 1.442271,0.40411 0.515459,-0.06184 0.984931,-0.326027 1.305675,-0.734051 l 6.813894,-8.674364 c 0.667506,-0.849902 0.519766,-2.080039 -0.330137,-2.747749" />
       </svg>
     </svg>
     <svg id="back-icon" class="svg-icon svg-path-icon">
       <svg x="0px" y="0px" viewBox="0 0 30 30" width="100%" height="100%">
-        <g stroke="none" stroke-width="1" sketch:type="MSPage">
-          <g sketch:type="MSArtboardGroup" transform="translate(-45.000000, -585.000000)">
-            <path d="M54,607.5 L54,591.5 C54,591.223858 54.2238576,591 54.5,591 L57.5,591 C57.7761424,591 58,591.223858 58,591.5 L58,604 L70.5,604 C70.7761424,604 71,604.223858 71,604.5 L71,607.5 C71,607.776142 70.7761424,608 70.5,608 L54.5,608 C54.2199998,608 54,607.779999 54,607.5 Z" sketch:type="MSShapeGroup" transform="translate(62.500000, 599.500000) rotate(-315.000000) translate(-62.500000, -599.500000) "/>
-          </g>
-        </g>
+            <path d="M 7.9299556,14.646447 19.243664,3.3327381 c 0.19526,-0.1952605 0.511845,-0.1952619 0.707107,0 l 2.12132,2.1213203 c 0.195262,0.1952619 0.19526,0.5118463 0,0.7071068 L 13.233256,15 l 8.838835,8.838835 c 0.195262,0.195262 0.19526,0.511846 0,0.707107 l -2.12132,2.12132 c -0.195261,0.195261 -0.511845,0.195262 -0.707107,0 L 7.9299556,15.353554 c -0.1979899,-0.19799 -0.1979899,-0.509117 0,-0.707107 z"/>
       </svg>
     </svg>
     <a id="blog-name" class="header-text" href="#"></a>
@@ -964,10 +975,8 @@ if (isset($_GET) && count($_GET)) {
       <div id="reblog" class="header-container">
     <svg id="reblogged-from-icon" class="svg-icon svg-path-icon">
       <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
-        <g>
           <polygon points="36.496,59.407 36.499,48.238 49.982,48.241 30.177,27.559 8.787,47.978 24.142,47.981    24.136,71.879 63.87,71.89 51.752,59.508  "/>
           <polygon points="75.856,52.018 75.863,28.12 36.129,28.109 48.247,40.491 63.505,40.592 63.5,51.761 50.017,51.757    69.822,72.441 91.213,52.021  "/>
-        </g>
       </svg>
     </svg>
     <a id="reblogged-from" class="header-text" href="#"></a>
@@ -975,10 +984,8 @@ if (isset($_GET) && count($_GET)) {
       <div id="srcblog" class="header-container">
     <svg id="source-icon" class="svg-icon svg-path-icon">
       <svg x="0px" y="0px" viewBox="0 0 96 96" width="100%" height="100%">
-        <g>
-          <path d="M28.4,35.2C24.7,39.5,22,45.6,22,53.3v16.2h17.7c2.9,0,5.2-2.3,5.2-5.2V46.4H31.9c0.7-2.7,1.9-4.9,3.4-6.7   c1.6-1.9,3.5-3.4,6.2-4.4c2-0.7,3.3-2.6,3.3-4.7v-3.9C36.6,27.9,32.1,30.8,28.4,35.2z"/>
-          <path d="M70.7,35.2c2-0.7,3.3-2.6,3.3-4.7v-3.9c-8.3,1.4-12.8,4.2-16.5,8.6c-3.7,4.4-6.4,10.4-6.4,18.1v16.2h17.7   c2.9,0,5.2-2.3,5.2-5.2V46.4H61.1c0.7-2.7,1.9-4.9,3.4-6.7C66.1,37.7,68,36.2,70.7,35.2z"/>
-        </g>
+        <path d="M28.4,35.2C24.7,39.5,22,45.6,22,53.3v16.2h17.7c2.9,0,5.2-2.3,5.2-5.2V46.4H31.9c0.7-2.7,1.9-4.9,3.4-6.7   c1.6-1.9,3.5-3.4,6.2-4.4c2-0.7,3.3-2.6,3.3-4.7v-3.9C36.6,27.9,32.1,30.8,28.4,35.2z"/>
+        <path d="M70.7,35.2c2-0.7,3.3-2.6,3.3-4.7v-3.9c-8.3,1.4-12.8,4.2-16.5,8.6c-3.7,4.4-6.4,10.4-6.4,18.1v16.2h17.7   c2.9,0,5.2-2.3,5.2-5.2V46.4H61.1c0.7-2.7,1.9-4.9,3.4-6.7C66.1,37.7,68,36.2,70.7,35.2z"/>
       </svg>
     </svg>
     <a id="source" class="header-text" href="#"></a>
@@ -989,7 +996,7 @@ if (isset($_GET) && count($_GET)) {
       <input type="text" id="view-blog-name" placeholder="Blog name">
       <a id="view-blog" class="header-text" href="#">
         <svg id="view-blog-likes-icon" class="svg-icon">
-          <svg viewBox="0 0 100 100" x="0px" y="0px">
+          <svg viewBox="0 0 100 100" x="0px" y="0px" width="100%" height="100%">
             <path d="M77.82,8.13H22.18A22.18,22.18,0,0,0,0,30.31V69.69A22.18,22.18,0,0,0,22.18,91.87H77.82A22.18,22.18,0,0,0,100,69.69V30.31A22.18,22.18,0,0,0,77.82,8.13ZM81.41,74a3.59,3.59,0,0,1-3.59,3.59H22.17A3.59,3.59,0,0,1,18.59,74V70a3.59,3.59,0,0,1,3.59-3.59H77.83A3.59,3.59,0,0,1,81.41,70v4Zm0-22a3.59,3.59,0,0,1-3.59,3.59H22.17A3.59,3.59,0,0,1,18.59,52V48a3.59,3.59,0,0,1,3.59-3.59H77.83A3.59,3.59,0,0,1,81.41,48v4Zm0-22.59A3.59,3.59,0,0,1,77.83,33H22.17a3.59,3.59,0,0,1-3.59-3.59v-4a3.59,3.59,0,0,1,3.59-3.59H77.83a3.59,3.59,0,0,1,3.59,3.59v4Z"/>
           </svg>
         </svg>
@@ -1002,24 +1009,28 @@ if (isset($_GET) && count($_GET)) {
       <a id="likes" class="header-text" href="#">
         <svg id="likes-icon" class="svg-icon">
           <svg viewBox="0 0 100 100" x="0px" y="0px"  width="100%" height="100%">
-            <g>
-              <path d="M45.8,80.3c2.3,2.3,6.1,2.3,8.4,0C64.5,70,85.1,50.9,87.6,44.8c1-2.4,1.5-4.9,1.4-7.6c-0.1-9.2-6.9-17-16-18.9   c-9-1.8-15.7,3.5-20.5,9.3c-1.3,1.6-3.7,1.6-5,0C42.7,21.8,36,16.5,27,18.3c-9,1.8-15.8,9.7-16,18.9c0,2.7,0.5,5.3,1.4,7.6   C14.9,50.9,35.5,70,45.8,80.3z"/>
-            </g>
+            <path d="M45.8,80.3c2.3,2.3,6.1,2.3,8.4,0C64.5,70,85.1,50.9,87.6,44.8c1-2.4,1.5-4.9,1.4-7.6c-0.1-9.2-6.9-17-16-18.9   c-9-1.8-15.7,3.5-20.5,9.3c-1.3,1.6-3.7,1.6-5,0C42.7,21.8,36,16.5,27,18.3c-9,1.8-15.8,9.7-16,18.9c0,2.7,0.5,5.3,1.4,7.6   C14.9,50.9,35.5,70,45.8,80.3z"/>
           </svg>
         </svg>
       </a>
       <a id="following" class="header-text" href="#">
         <svg id="following-icon" class="svg-icon">
-          <svg x="0px" y="0px" viewBox="0 0 100 100" >
-            <g>
-              <path d="M1.25,33.75H17.5V17.5H1.25V33.75z M1.25,58.125H17.5v-16.25    H1.25V58.125z M1.25,82.5H17.5V66.25H1.25V82.5z M28.334,17.5v16.25H98.75V17.5H28.334z M28.334,58.125H98.75v-16.25H28.334    V58.125z M28.334,82.5H98.75V66.25H28.334V82.5z">
-              </path>
-            </g>
+          <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
+            <path d="M1.25,33.75H17.5V17.5H1.25V33.75z M1.25,58.125H17.5v-16.25    H1.25V58.125z M1.25,82.5H17.5V66.25H1.25V82.5z M28.334,17.5v16.25H98.75V17.5H28.334z M28.334,58.125H98.75v-16.25H28.334    V58.125z M28.334,82.5H98.75V66.25H28.334V82.5z">
+            </path>
+          </svg>
+        </svg>
+      </a>
+      <a id="open-post" class="header-text" href="#" target="_blank">
+        <svg id="open-post-icon" class="svg-icon">
+          <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
+            <path d="m 65,17.999985 0,8.875 c -13.1574,3.3428 -31.9085,12.29 -38,31.12503 15.2216,-13.35813 36.7436,-11.90278 38,-11.84378 l 0,8.87498 24,-18.49998 z m -50,6 c -2.0943,2.1e-4 -3.9998,1.90566 -4,4 l 0,50.00003 c 2e-4,2.0943 1.9057,3.9998 4,4 l 52,0 c 2.0943,-2e-4 3.9998,-1.9057 4,-4 l 0,-22.5625 -3.5625,2.75 -4.4375,3.4375 0,12.375 -44,0 0,-42.00003 24.0938,0 c 5.8517,-3.74585 12.0628,-6.32105 17.625,-8 z" />
           </svg>
         </svg>
       </a>
       </div>
   </div>
+  <div id="messages"></div>
   <div id="loader"></div>
   <div id="content">
     <!--<img class="photo" id="photo" src="https://78.media.tumblr.com/e571c5a59194a56d45230be599b97db4/tumblr_p5d0bdvDXG1vt4jtuo1_1280.jpg" />-->
@@ -1027,7 +1038,7 @@ if (isset($_GET) && count($_GET)) {
   <div id="footer"></div>
 <svg style="display:none" id="svg-icons">
   <svg id="error-icon">
-    <svg viewBox="0 0 253 253" x="0px" y="0px">
+    <svg viewBox="0 0 253 253" x="0px" y="0px" width="100%" height="100%">
       <polygon points="86,127 0,41 41,0 127,86 213,0 253,41 167,127 253,213 213,253 127,167 41,253 0,213 "/>
     </svg>
   </svg>
