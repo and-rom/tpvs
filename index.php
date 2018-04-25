@@ -1,7 +1,6 @@
 <?php
 //TODO: Show following blogs on side panel with scroll
 //TODO: Follow action
-//TODO: Like action
 
 if (isset($_GET) && count($_GET)) {
 
@@ -44,8 +43,6 @@ if (isset($_GET) && count($_GET)) {
             $_SESSION['Tumblr_oauth_token_secret']
         );
 
-        $clientInfo = $client->getUserInfo();
-
         $options['limit'] = 20;
         switch ($action) {
             case "dash":
@@ -71,8 +68,8 @@ if (isset($_GET) && count($_GET)) {
                 }
                 switch ($action) {
                     case "dash":
-                        $response = $client->getDashboardPosts($options);
-                        $posts = $response->posts;
+                        $result = $client->getDashboardPosts($options);
+                        $posts = $result->posts;
                     break;
                     case "blog":
                         if (!empty($_GET['blog'])) {
@@ -80,21 +77,26 @@ if (isset($_GET) && count($_GET)) {
                         } else {
                             $code = 400;
                         }
-                        $response = $client->getBlogPosts($blog, $options);
-                        $posts = $response->posts;
+                        try {
+                            $result = $client->getBlogPosts($blog, $options);
+                            $posts = $result->posts;
+                        } catch (Exception $e) {
+                            $code = $e->getCode();
+                            $posts = [];
+                        }
                     break;
                     case "likes":
+                        //$clientInfo = $client->getUserInfo();
                         //$likes = $clientInfo->user->likes;
                         //$totalPages = intval($likes / $options['limit']) + ($likes % $options['limit'] > 0 ? 1 : 0);
                         //if ($page <= $totalPages) {
-                            $response = $client->getLikedPosts($options);
-                            $posts = $response->liked_posts;
+                            $result = $client->getLikedPosts($options);
+                            $posts = $result->liked_posts;
                         //} else {
                         //    $code = 400;
                         //}
                     break;
                 }
-                //$res_array = [];
                 $response->posts = [];
                 foreach ($posts as $post) {
                     $obj = new stdClass;
@@ -126,11 +128,11 @@ if (isset($_GET) && count($_GET)) {
                             break;
                     }
                 }
-                //echo json_encode($res_array ,JSON_UNESCAPED_UNICODE);
-                $code = 200;
+                $code = isset($code) ? $code : 200;
                 break;
             case "followed":
                 $obj = new stdClass;
+                $clientInfo = $client->getUserInfo();
                 $obj->total_blogs = $clientInfo->user->following;
                 $obj->blogs = [];
                 $totalPages = intval($obj->total_blogs / $options['limit']) + ($obj->total_blogs % $options['limit'] > 0 ? 1 : 0);
@@ -141,6 +143,28 @@ if (isset($_GET) && count($_GET)) {
                 }
                 $response->followed_blogs = $obj;
                 $code = 200;
+                break;
+            case "like":
+            case "unlike":
+                if (isset($_GET['id']) && isset($_GET['reblog_key'])) {
+                    try {
+                        switch ($action) {
+                            case "like":
+                                $result = $client->like($_GET['id'], $_GET['reblog_key']);
+                                $msg = "Liked!";
+                            break;
+                            case "unlike":
+                                $result = $client->unlike($_GET['id'], $_GET['reblog_key']);
+                                $msg = "Unliked!";
+                            break;
+                        }
+                        $code = 201;
+                    } catch (Exception $e) {
+                        $code = $e->getCode();
+                    }
+                }
+                break;
+            case "follow":
                 break;
             default:
                 $code = 405;
@@ -164,18 +188,24 @@ if (isset($_GET) && count($_GET)) {
         case 200:
             $response->msg = "OK";
             break;
+        case 201:
+            $response->msg = $msg;
+            break;
         case 400:
             $response->msg = "Bad Request";
+            break;
+        case 404:
+            $response->msg = "Not Found";
             break;
         case 405:
             $response->msg = "Method Not Allowed";
             break;
         case 511:
             $response->auth_url = $url;
-            $response->msg = "Authentication Required";
+            $response->msg = "Authorization Required";
             break;
         default:
-            $response->msg = "Unknown Error";
+            $response->msg = isset($msg) ? $msg : "Unknown Error";
             break;
     }
 
@@ -249,15 +279,33 @@ if (isset($_GET) && count($_GET)) {
                 success: this.response
             });
         },
+        like: function(action){
+            console.log(action == "like" ? "Liking" : "Unliking");
+            $("#loader").show();
+            //this.currentPage++;
+            $.ajax({
+                dataType: "json",
+                url: "./index.php",
+                async: true,
+                data: {action: action,
+                       id:   this.slides[this.currentSlide].id,
+                       reblog_key:   this.slides[this.currentSlide].reblog_key},
+                context: this,
+                success: this.response
+            });
+        },
         response: function(data){
             console.log("Response");
-            console.log(data.posts);
             switch (data.code) {
                 case 200:
                     if (data.hasOwnProperty('posts')) {
                         console.log("Get " + data.posts.length + " posts");
+                        console.log(data.posts);
                         $("#loader").hide();
-                        if (data.posts.length == 0) this.noMore = true;
+                        if (data.posts.length == 0) {
+                            this.noMore = true;
+                            setMessage("No more posts.")
+                        }
                         this.slides = this.slides.concat(data.posts);
                         console.log("Total posts: " + this.slides.length);
                         this.updateLocked = false;
@@ -266,9 +314,33 @@ if (isset($_GET) && count($_GET)) {
                         }
                     }
                     break;
+                case 201:
+                    console.log(data);
+                    $("#loader").hide();
+                    setMessage(data.msg);
+                    break;
+                case 404:
+                    setMessage(data.msg);
+                    $("#loader").hide();
+                    if (data.hasOwnProperty('posts')) {
+                        console.log("Get " + data.posts.length + " posts");
+                        console.log(data.posts);
+                        if (data.posts.length == 0) this.noMore = true;
+                        this.slides = this.slides.concat(data.posts);
+                        console.log("Total posts: " + this.slides.length);
+                    }
+                    this.updateLocked = false;
+                    this.clearPostInfo();
+                    $("#header").hide();
+                    break;
                 case 511:
+                    console.log(data);
+                    $("#loader").hide();
+                    setMessage(data.msg);
                     if (data.hasOwnProperty('auth_url')) {
-                        window.location.href = data.auth_url;
+                        setTimeout(function(){
+                            window.location.href = data.auth_url;
+                        },1500)
                     }
                     break;
                 default:
@@ -324,8 +396,19 @@ if (isset($_GET) && count($_GET)) {
             }
 
             $("#date").html(this.age(this.slides[this.currentSlide].timestamp));
-            $("#open-post").attr("href", this.slides[this.currentSlide].post_url);
             $("#footer").html(this.slides[this.currentSlide].caption);
+        },
+        clearPostInfo: function() {
+            $("#blog-name").empty();
+
+            $("#reblogged-from").empty();
+            $("#reblogged-from-icon").hide();
+
+            $("#source").empty();
+            $("#source-icon").hide();
+
+            $("#date").empty();
+            $("#footer").empty();
         },
         displayPhoto: function() {
             this.iframe = new Image();
@@ -394,6 +477,17 @@ if (isset($_GET) && count($_GET)) {
                 }
                 $('#content').html(this.slides[this.currentSlide].player);
                 this.iframe = $('iframe').first();
+                this.resize();
+                this.unlock();
+              break;
+              case "instagram":
+                if (!this.slides[this.currentSlide].player) {
+                    $("#content").empty().append($("#error-icon").clone());
+                    this.unlock();
+                    return;
+                }
+                $('#content').html(this.slides[this.currentSlide].player);
+                this.iframe = $('blockquote').first();
                 this.resize();
                 this.unlock();
               break;
@@ -517,6 +611,12 @@ if (isset($_GET) && count($_GET)) {
             console.log(this.slides);
         }
     };
+    function setMessage (text) {
+        $("#messages").append($("<span> </span>").html(text));
+        setTimeout(function() {
+            $("#messages span").first().remove();
+        }, 5000);
+    }
 
     layouts.push({
         __proto__: layout$
@@ -546,9 +646,9 @@ if (isset($_GET) && count($_GET)) {
     });
     $("#blog-name, #reblogged-from, #source, #likes, #view-blog").on('click',function (e){
         console.log("Clicked on " + ( $(this).children().length == 0 ? "blog link " + $(this).html() : "button with id " + this.id) );
-        //$('#content').empty();
         switch(this.id) {
             case 'likes':
+                $('#content').empty();
                 layouts.push({
                     __proto__: layout$,
                     layoutType: "likes"
@@ -558,6 +658,7 @@ if (isset($_GET) && count($_GET)) {
                 if ($('#view-blog-name').is(":visible")) {
                     $('#view-blog-name').hide();
                     if ($('#view-blog-name').val() != '') {
+                        $('#content').empty();
                         layouts.push({
                             __proto__: layout$,
                             layoutType: "blog",
@@ -574,6 +675,7 @@ if (isset($_GET) && count($_GET)) {
             break;
             default:
                 if ($(this).html() != "" ) {
+                    $('#content').empty();
                     layouts.push({
                         __proto__: layout$,
                         layoutType: "blog",
@@ -620,6 +722,18 @@ if (isset($_GET) && count($_GET)) {
             $("#home-icon").hide();
         }
     });
+    $("#open-post").on('click',function (e){
+        if (typeof currentLayout.slides[currentLayout.currentSlide].post_url !== 'undefined' && currentLayout.slides[currentLayout.currentSlide].post_url !== '')
+            window.open(currentLayout.slides[currentLayout.currentSlide].post_url);
+    });
+    $("#like-post").on('click',function (e){
+    console.log(currentLayout);
+        if (currentLayout.layoutType != "likes") {
+            currentLayout.like("like");
+        } else {
+            currentLayout.like("unlike");
+        }
+    });
     $("#type").change(function (e){
         $("#header, #footer").hide();
         currentLayout.type=this.value;
@@ -664,7 +778,7 @@ if (isset($_GET) && count($_GET)) {
                          navigator.userAgent.match(/iPad/i)       ||
                          navigator.userAgent.match(/iPod/i)       ||
                          navigator.userAgent.match(/BlackBerry/i) ||
-                         navigator.userAgent.match(/Windows Phone/i));
+                         navigator.userAgent.match(/Windows Phone/i));stealthMode = false;
     $(window).on('mouseleave blur focusout', function (e) {
         e.preventDefault();
         if (stealthMode) {
@@ -692,11 +806,11 @@ if (isset($_GET) && count($_GET)) {
             return;
         }
         if (enabled) switch (code){
-            case 39:  // right
+            case 37:  // left
             case 65:  // 'A'
                 currentLayout.show(1);
                 break;
-            case 37: // left
+            case 39: // right
             case 68: // 'D'
                 currentLayout.show(-1);
                 break;
@@ -730,6 +844,11 @@ if (isset($_GET) && count($_GET)) {
                 // video
                 $("#type").val("video").trigger('change');
                 break;
+            case 84: // 't'
+                // open post
+                console.log($("#open-post").attr("href"));
+                $("#open-post").click();
+                break;
             case 32: // space
                 $("#content").click();
                 break;
@@ -741,6 +860,9 @@ if (isset($_GET) && count($_GET)) {
                 break;
             case 220: // '\'
                 stealthMode = !stealthMode;
+                break;
+            case 77: // '\'
+                setMessage("Test message " + Math.random());
                 break;
             default:
                 break;
@@ -900,8 +1022,11 @@ if (isset($_GET) && count($_GET)) {
         100% { transform: rotate(360deg); }
     }
     #messages {
-        display:none;
         position: relative;
+        text-align: center;
+    }
+    #messages span{
+        display:block;
     }
     #content {
         height: 100%;
@@ -926,9 +1051,6 @@ if (isset($_GET) && count($_GET)) {
         left: 50%;
         transform: translate(-50%, -50%);
     }
-    #header,#footer {
-        text-shadow: 1px 1px 3px black, -1px -1px 3px black, -1px 1px 3px black, 1px -1px 3px black;
-    }
     #footer {
         display:none;
         min-height:0;
@@ -948,6 +1070,7 @@ if (isset($_GET) && count($_GET)) {
         overflow-y: scroll;
         color:white;
         background: rgba(40, 40, 40, .5);
+        text-shadow: 1px 1px 3px black, -1px -1px 3px black, -1px 1px 3px black, 1px -1px 3px black;
         z-index:1;
     }
     #header::-webkit-scrollbar, #messages::-webkit-scrollbar, #footer::-webkit-scrollbar {
@@ -1021,10 +1144,17 @@ if (isset($_GET) && count($_GET)) {
           </svg>
         </svg>
       </a>
-      <a id="open-post" class="header-text" href="#" target="_blank">
+      <a id="open-post" class="header-text" href="#">
         <svg id="open-post-icon" class="svg-icon">
           <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
             <path d="m 65,17.999985 0,8.875 c -13.1574,3.3428 -31.9085,12.29 -38,31.12503 15.2216,-13.35813 36.7436,-11.90278 38,-11.84378 l 0,8.87498 24,-18.49998 z m -50,6 c -2.0943,2.1e-4 -3.9998,1.90566 -4,4 l 0,50.00003 c 2e-4,2.0943 1.9057,3.9998 4,4 l 52,0 c 2.0943,-2e-4 3.9998,-1.9057 4,-4 l 0,-22.5625 -3.5625,2.75 -4.4375,3.4375 0,12.375 -44,0 0,-42.00003 24.0938,0 c 5.8517,-3.74585 12.0628,-6.32105 17.625,-8 z" />
+          </svg>
+        </svg>
+      </a>
+      <a id="like-post" class="header-text" href="#">
+        <svg id="like-post-icon" class="svg-icon">
+          <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
+            <path d="M94.467,39.192c0,7.43-3.639,13.962-9.173,18.074l0.063,0.038l-2.537,1.959  c-0.754-0.398-1.6-0.646-2.512-0.646h-7.234v-7.235c0-2.986-2.421-5.407-5.407-5.407c-2.985,0-5.407,2.421-5.407,5.407v7.235h-7.234  c-2.986,0-5.407,2.421-5.407,5.406c0,2.987,2.421,5.407,5.407,5.407h7.234v5.715l-11.055,8.539L17.06,57.305l0.063-0.038  C11.595,53.154,7.95,46.622,7.95,39.192c0-12.458,10.102-22.565,22.572-22.565c9.268,0,17.208,5.597,20.683,13.583  c3.475-7.985,11.429-13.583,20.696-13.583C84.359,16.627,94.467,26.735,94.467,39.192z M80.309,60.209h-8.825v-8.826  c0-2.107-1.709-3.816-3.816-3.816c-2.108,0-3.816,1.709-3.816,3.816v8.826h-8.825c-2.107,0-3.816,1.709-3.816,3.815  c0,2.108,1.709,3.817,3.816,3.817h8.825v8.824c0,2.109,1.708,3.818,3.816,3.818c2.107,0,3.816-1.709,3.816-3.818v-8.824h8.825  c2.108,0,3.817-1.709,3.817-3.817C84.126,61.918,82.417,60.209,80.309,60.209z"/>
           </svg>
         </svg>
       </a>
