@@ -296,7 +296,6 @@ if (isset($_GET) && count($_GET)) {
         like: function(action){
             console.log(action == "like" ? "Liking" : "Unliking");
             $("#loader").show();
-            //this.currentPage++;
             $.ajax({
                 dataType: "json",
                 url: "./index.php",
@@ -304,6 +303,18 @@ if (isset($_GET) && count($_GET)) {
                 data: {action: action,
                        id:   this.slides[this.currentSlide].id,
                        reblog_key:   this.slides[this.currentSlide].reblog_key},
+                context: this,
+                success: this.response
+            });
+        },
+        follow: function(action){
+            $("#loader").show();
+            $.ajax({
+                dataType: "json",
+                url: "./index.php",
+                async: true,
+                data: {action: "follow",
+                       blog:   this.slides[this.currentSlide].blog_name},
                 context: this,
                 success: this.response
             });
@@ -327,11 +338,6 @@ if (isset($_GET) && count($_GET)) {
                             this.display();
                         }
                     }
-                    break;
-                case 201:
-                    console.log(data);
-                    $("#loader").hide();
-                    setMessage(data.msg);
                     break;
                 case 404:
                     setMessage(data.msg);
@@ -357,7 +363,12 @@ if (isset($_GET) && count($_GET)) {
                         },1500)
                     }
                     break;
+                case 201:
+                case 202:
                 default:
+                    console.log(data);
+                    $("#loader").hide();
+                    setMessage(data.msg);
                     break;
             }
         },
@@ -501,9 +512,15 @@ if (isset($_GET) && count($_GET)) {
                     return;
                 }
                 $('#content').html(this.slides[this.currentSlide].player);
-                this.iframe = $('blockquote').first();
-                this.resize();
                 this.unlock();
+                if (typeof window.instgrm !== 'undefined')
+                    window.instgrm.Embeds.process();
+                setTimeout(function(){
+                    console.log(window.instgrm);
+                    currentLayout.iframe = $('iframe').first();
+                    currentLayout.resize();
+                    $(currentLayout.iframe).css("max-width","")
+                },2000)
               break;
               default:
                 console.log("Video type: " + this.slides[this.currentSlide].video_type);
@@ -625,6 +642,11 @@ if (isset($_GET) && count($_GET)) {
             console.log(this.slides);
         }
     };
+
+    window.__igEmbedLoaded = function( loadedItem ) {
+        console.log("??");
+    };
+
     function setMessage (text) {
         $("#messages").append($("<span> </span>").html(text));
         setTimeout(function() {
@@ -741,12 +763,14 @@ if (isset($_GET) && count($_GET)) {
             window.open(currentLayout.slides[currentLayout.currentSlide].post_url);
     });
     $("#like-post").on('click',function (e){
-    console.log(currentLayout);
         if (currentLayout.layoutType != "likes") {
             currentLayout.like("like");
         } else {
             currentLayout.like("unlike");
         }
+    });
+    $("#follow").on('click',function (e){
+       currentLayout.follow();
     });
     $("#type").change(function (e){
         $("#header, #footer").hide();
@@ -840,20 +864,24 @@ if (isset($_GET) && count($_GET)) {
                 // blog
                 $("#blog-name").click();
             case 83: // 's'
-                // reblog
+                // reblogged from
                 $("#reblogged-from").click();
                 break;
             case 88: // 'x'
-                // src
+                // source
                 $("#source").click();
                 break;
-            case 82: // 'r'
-                // all
-                $("#type").val("all").trigger('change');
             case 70: // 'f'
+                // follow
+                $("#follow").click();
+                break;
+            case 78: // 'n'
                 // photo
                 $("#type").val("photo").trigger('change');
                 break;
+            case 66: // 'b'
+                // both
+                $("#type").val("all").trigger('change');
             case 86: // 'v'
                 // video
                 $("#type").val("video").trigger('change');
