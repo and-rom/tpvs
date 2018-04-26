@@ -234,7 +234,7 @@ if (isset($_GET) && count($_GET)) {
 <!DOCTYPE html>
 <html>
 <head>
-  <title></title>
+  <title>Tumblr Photo Video Slider</title>
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta charset="utf-8">
   <meta name="description" content="">
@@ -394,6 +394,12 @@ if (isset($_GET) && count($_GET)) {
         display: function(){
             console.log("Current slide: " + this.currentSlide + "/" + this.slides.length + " >" + this.slides.length/2);
             this.lock();
+            if (this.slides.length == 0) {
+                this.unlock();
+                this.clearPostInfo(true);
+                $("#header").show();
+                return;
+            }
             this.displayPostInfo();
             if (this.slides[this.currentSlide].type == "photo") {
                 this.displayPhoto();
@@ -423,8 +429,9 @@ if (isset($_GET) && count($_GET)) {
             $("#date").html(this.age(this.slides[this.currentSlide].timestamp));
             $("#footer").html(this.slides[this.currentSlide].caption);
         },
-        clearPostInfo: function() {
-            $("#blog-name").empty();
+        clearPostInfo: function(partial = false) {
+            if (!partial)
+                $("#blog-name").empty();
 
             $("#reblogged-from").empty();
             $("#reblogged-from-icon").hide();
@@ -774,6 +781,7 @@ if (isset($_GET) && count($_GET)) {
     });
     $("#type").change(function (e){
         $("#header, #footer").hide();
+        $('#content').empty();
         currentLayout.type=this.value;
         currentLayout.currentSlide=0;
         currentLayout.currentPage=0;
