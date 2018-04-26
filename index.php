@@ -1037,6 +1037,7 @@ if (isset($_GET) && count($_GET)) {
     #buttons{
         float: right;
         margin-right: 10px;
+        text-align: right;
     }
     .button {
         text-decoration: none;
