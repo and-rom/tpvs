@@ -465,8 +465,8 @@ if (isset($_GET) && count($_GET)) {
                 $(this.iframe).prop("autoplay",true);
 
                 $(this.iframe).removeAttr("muted");
-                $(this.iframe).prop("muted",false);
-
+                //$(this.iframe).prop("muted",false);
+                $(this.iframe).prop("muted",stealthMode);
                 $(this.iframe).prop("preload","auto");
 
                 var _this = this;
