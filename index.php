@@ -635,7 +635,7 @@ if (isset($_GET) && count($_GET)) {
                 stepPosition = Math.round(this.iframe[0].duration * 0.05);
                 if (stepPosition < 1) stepPosition = 1;
                 var newPosition = this.iframe[0].currentTime + stepPosition*direction;
-                if (newPosition > 0 || newPosition < this.iframe[0].duration)this.iframe[0].currentTime = newPosition;
+                if (newPosition > 0 || newPosition < this.iframe[0].duration) this.iframe[0].currentTime = newPosition;
             }
         },
         test: function(){
@@ -952,6 +952,7 @@ if (isset($_GET) && count($_GET)) {
     });
     */
     // touch
+    var xDown,yDown,xUp,yUp = null;
     var touchOff = false;
     $(document).bind('touchstart', function (ev) {
         if ( touchOff ) {return;}
@@ -965,6 +966,25 @@ if (isset($_GET) && count($_GET)) {
         if ( ! xDown || ! yDown ) {return;}
         xUp = e.touches[0].clientX;
         yUp = e.touches[0].clientY;
+        var xDiff = xDown - xUp;
+        var yDiff = yDown - yUp;
+        var direction = 0;
+        if ( Math.abs( xDiff ) > Math.abs( yDiff ) ) {
+            if ( xDiff > 0 ) {
+                direction = 1;
+            } else if (xDiff < 0) {
+                direction = -1;
+            }
+            if ( xDiff%25 == 0 ) {
+                currentLayout.seek(-direction);
+            }
+        }/* else {
+            if ( yDiff > 25 ) {
+                currentLayout.show(-1);
+            } else if (yDiff < -25) {
+                currentLayout.show(1);
+            }
+        }*/
     });
     $(document).bind('touchend', function (ev) {
         if ( touchOff ) {return;}
@@ -972,16 +992,16 @@ if (isset($_GET) && count($_GET)) {
         var xDiff = xDown - xUp;
         var yDiff = yDown - yUp;
         if ( Math.abs( xDiff ) > Math.abs( yDiff ) ) {
-            if ( xDiff > 25 ) {
-                currentLayout.show(-1);
+            /*if ( xDiff > 25 ) {
+                //currentLayout.show(-1);
             } else if (xDiff < -25) {
-                currentLayout.show(1);
-            }
+                //currentLayout.show(1);
+            }*/
         } else {
-            if ( yDiff > 100 ) {
-                // up swipe
-            } else if (yDiff < -100) {
-                // down swipe
+            if ( yDiff > 25 ) {
+                currentLayout.show(-1);
+            } else if (yDiff < -25) {
+                currentLayout.show(1);
             }
         }
         xDown = null;
