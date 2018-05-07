@@ -675,13 +675,11 @@ if (isset($_GET) && count($_GET)) {
                 stepPosition = Math.round(this.iframe[0].duration * 0.05);
                 if (stepPosition < 1) stepPosition = 1;
                 var newPosition = this.iframe[0].currentTime + stepPosition*direction;
-
                 if (newPosition < 0)
                     newPosition = 0;
                 else
                     if (newPosition > this.iframe[0].duration)
                         newPosition = this.iframe[0].duration - 1;
-
                 this.iframe[0].currentTime = newPosition;
                 setMessage(formatTime(newPosition) + " / " + formatTime(this.iframe[0].duration) + " (" + ( direction>0 ? "+" : "-" ) + stepPosition + ")", "timer");
             }
@@ -719,7 +717,6 @@ if (isset($_GET) && count($_GET)) {
                 clearTimeout(messageTimer);
                 messageTimer = 0;
             }
-
             messageTimer = setTimeout(function() {
                 $("#messages span#" + id).first().remove();
                 }, 1000);
