@@ -552,7 +552,7 @@ if (isset($_GET) && count($_GET)) {
                 this.iframe = $('iframe').first();
                 this.resize();
                 this.unlock();
-                $("#controls").show().fadeTo( 5000, 0 );
+                $("#controls").show().fadeTo( 1000, 0 );
               break;
               case "instagram":
                 if (!this.slides[this.currentSlide].player) {
@@ -570,7 +570,7 @@ if (isset($_GET) && count($_GET)) {
                     currentLayout.resize();
                     $(currentLayout.iframe).css("max-width","")
                 },2000)
-                $("#controls").show().fadeTo( 2000, 0 );
+                $("#controls").show().fadeTo( 1000, 0 );
               break;
               default:
                 console.log("Video type: " + this.slides[this.currentSlide].video_type);
@@ -1256,14 +1256,15 @@ if (isset($_GET) && count($_GET)) {
         left: 0;
         height: 20%;
         width: 100%;
-
+        background: #0f0;
+        opacity: 0.8;
     }
     .controls {
         height: 100%;
         position: absolute;
         top: 0;
         width: 20%;
-        background: #000;
+        background: #f00;
         opacity: 0.8;
     }
     #next {
