@@ -552,6 +552,7 @@ if (isset($_GET) && count($_GET)) {
                 this.iframe = $('iframe').first();
                 this.resize();
                 this.unlock();
+                $("#controls").show().fadeTo( 5000, 0 );
               break;
               case "instagram":
                 if (!this.slides[this.currentSlide].player) {
@@ -569,6 +570,7 @@ if (isset($_GET) && count($_GET)) {
                     currentLayout.resize();
                     $(currentLayout.iframe).css("max-width","")
                 },2000)
+                $("#controls").show().fadeTo( 2000, 0 );
               break;
               default:
                 console.log("Video type: " + this.slides[this.currentSlide].video_type);
@@ -587,6 +589,7 @@ if (isset($_GET) && count($_GET)) {
                     status = this.next();
                 }
                 if (status) {
+                    $("#controls").hide().css({ opacity: 1 });;
                     this.display();
                     $("#header, #footer").hide();
                 }
@@ -741,7 +744,7 @@ if (isset($_GET) && count($_GET)) {
     $(window).resize(function (e){
         currentLayout.resize()
     });
-    $("#content").on('click',function (e){
+    $("#content, #controls").on('click',function (e){
 
         if ($(currentLayout.iframe).is("video")) {
             if ($(currentLayout.iframe)[0].paused) {
@@ -805,8 +808,8 @@ if (isset($_GET) && count($_GET)) {
         currentLayout = layouts[layouts.length-1];
         $("#type").val(currentLayout.type);
         currentLayout.update();
-        $("#back-icon").show();
-        if (layouts.length > 2) $("#home-icon").show();
+        $("#back").show();
+        if (layouts.length > 2) $("#home").show();
         $("#header, #footer").hide();
         //currentLayout.test();
     });
@@ -814,26 +817,24 @@ if (isset($_GET) && count($_GET)) {
         if (e.keyCode == 13)
             $('#view-blog').click();
     });
-    $("#back-icon").on('click',function (e){
-        layouts.pop();
+    $("#home, #back").on('click',function (e){
+        switch(this.id) {
+            case 'home':
+                while (layouts.length > 1) {
+                    layouts.pop();
+                }
+            break;
+            case 'back':
+                layouts.pop();
+            break;
+        }
+
         currentLayout = layouts[layouts.length-1];
         $("#type").val(currentLayout.type);
         currentLayout.display();
         if (layouts.length == 1) {
-            $("#back-icon").hide();
-            $("#home-icon").hide();
-        }
-    });
-    $("#home-icon").on('click',function (e){
-        while (layouts.length > 1) {
-            layouts.pop();
-        }
-        currentLayout = layouts[layouts.length-1];
-        $("#type").val(currentLayout.type);
-        currentLayout.display();
-        if (layouts.length == 1) {
-            $("#back-icon").hide();
-            $("#home-icon").hide();
+            $("#back").hide();
+            $("#home").hide();
         }
     });
     $("#open-post").on('click',function (e){
@@ -936,20 +937,20 @@ if (isset($_GET) && count($_GET)) {
         }
         if (enabled) switch (code){
             case 37:  // left
-            case 65:  // 'A'
+            case 65:  // 'a'
                 currentLayout.show(1);
                 break;
             case 39: // right
-            case 68: // 'D'
+            case 68: // 'd'
                 currentLayout.show(-1);
                 break;
             case 81: // 'q'
                 // home
-                $("#home-icon").click();
+                $("#home").click();
                 break;
             case 87: // 'w'
                 // back
-                $("#back-icon").click();
+                $("#back").click();
                 break;
             case 69: // 'e'
                 // blog
@@ -997,9 +998,6 @@ if (isset($_GET) && count($_GET)) {
             case 220: // '\'
                 stealthMode = !stealthMode;
                 break;
-            case 77: // '\'
-                setMessage("Test message " + Math.random());
-                break;
             default:
                 break;
         }
@@ -1007,6 +1005,16 @@ if (isset($_GET) && count($_GET)) {
     // mouse wheel
     $("#content").on('mousewheel DOMMouseScroll',function (e){
         currentLayout.show(parseInt(e.originalEvent.wheelDelta || - e.originalEvent.detail));
+    });
+    $("#prev, #next").on('click',function (e){
+        switch(this.id) {
+            case 'prev':
+                currentLayout.show(1);
+            break;
+            case 'next':
+                currentLayout.show(-1);
+            break;
+        }
     });
     // touch
     var xDown,yDown,xUp,yUp = null;
@@ -1133,11 +1141,8 @@ if (isset($_GET) && count($_GET)) {
         width: 3ex;
         vertical-align: text-top;
     }
-    .svg-path-icon {
+    #back, #home, .svg-path-icon {
         display:none;
-    }
-    #back-icon, #home-icon {
-        cursor: pointer;
     }
     #view-blog-name {
         display:none;
@@ -1241,31 +1246,58 @@ if (isset($_GET) && count($_GET)) {
         z-index:1;
     }
     #header::-webkit-scrollbar, #messages::-webkit-scrollbar, #footer::-webkit-scrollbar {
-    display: none;
-}
-@media screen and (max-width: 600px) {
-    .header-container {
-        line-height: initial;
+        display: none;
     }
-}
+    #controls {
+        display: none;
+        position: absolute;
+        bottom: 40%;
+        left: 0;
+        height: 20%;
+        width: 100%;
+
+    }
+    .controls {
+        height: 100%;
+        position: absolute;
+        top: 0;
+        width: 20%;
+        background: #000;
+        opacity: 0.8;
+    }
+    #next {
+        right: 0;
+    }
+    #prev {
+        left: 0;
+    }
+    @media screen and (max-width: 600px) {
+        .header-container {
+            line-height: initial;
+        }
+    }
   </style>
 </head>
 <body>
   <div id="header">
     <div id="blogs">
       <div id="blog" class="header-container">
-    <svg id="home-icon" class="svg-icon svg-path-icon">
+      <a id="home" class="button" href="#" title="Home (Q)">
+    <svg id="home-icon" class="svg-icon">
       <svg viewBox="0 0 100 100" version="1.1" x="0px" y="0px" width="100%" height="100%">
         <path d="M 82.916596,56.420924 51.203289,31.690592 c -0.707436,-0.551664 -1.699217,-0.551664 -2.406849,0 L 17.083328,56.420924 c -0.475538,0.370842 -0.75362,0.940118 -0.75362,1.543249 l 0,32.571429 c 0,1.080822 0.876321,1.956947 1.956947,1.956947 l 63.426614,0 c 1.080627,0 1.956948,-0.876125 1.956948,-1.956947 l 0,-32.571429 c 0,-0.603131 -0.278083,-1.172407 -0.753621,-1.543249" />
         <path d="M 99.197477,45.621688 51.208827,7.9256021 c -0.709785,-0.557535 -1.708023,-0.557535 -2.417808,0 L 0.80237008,45.621688 c -0.40802348,0.320548 -0.67201565,0.790215 -0.73405088,1.305479 -0.06183953,0.51546 0.08356165,1.034247 0.40410959,1.44227 l 6.81389441,8.674364 c 0.3863013,0.49139 0.9602739,0.748141 1.5403131,0.748141 0.4228963,0 0.8491194,-0.136595 1.2076317,-0.4182 L 50.000021,25.979613 89.965774,57.373742 c 0.40822,0.320744 0.927006,0.466145 1.442271,0.40411 0.515459,-0.06184 0.984931,-0.326027 1.305675,-0.734051 l 6.813894,-8.674364 c 0.667506,-0.849902 0.519766,-2.080039 -0.330137,-2.747749" />
       </svg>
     </svg>
-    <svg id="back-icon" class="svg-icon svg-path-icon">
+    </a>
+    <a id="back" class="button" href="#" title="Back (W)">
+    <svg id="back-icon" class="svg-icon">
       <svg x="0px" y="0px" viewBox="0 0 30 30" width="100%" height="100%">
             <path d="M 7.9299556,14.646447 19.243664,3.3327381 c 0.19526,-0.1952605 0.511845,-0.1952619 0.707107,0 l 2.12132,2.1213203 c 0.195262,0.1952619 0.19526,0.5118463 0,0.7071068 L 13.233256,15 l 8.838835,8.838835 c 0.195262,0.195262 0.19526,0.511846 0,0.707107 l -2.12132,2.12132 c -0.195261,0.195261 -0.511845,0.195262 -0.707107,0 L 7.9299556,15.353554 c -0.1979899,-0.19799 -0.1979899,-0.509117 0,-0.707107 z"/>
       </svg>
     </svg>
-    <a id="blog-name" href="#"></a>
+    </a>
+    <a id="blog-name" href="#"  title="Visit this blog (e)"></a>
       </div>
       <div id="reblog" class="header-container">
     <svg id="reblogged-from-icon" class="svg-icon svg-path-icon">
@@ -1274,7 +1306,7 @@ if (isset($_GET) && count($_GET)) {
           <polygon points="75.856,52.018 75.863,28.12 36.129,28.109 48.247,40.491 63.505,40.592 63.5,51.761 50.017,51.757    69.822,72.441 91.213,52.021  "/>
       </svg>
     </svg>
-    <a id="reblogged-from" href="#"></a>
+    <a id="reblogged-from" href="#" title="Visit reblogged blog (S)"></a>
       </div>
       <div id="srcblog" class="header-container">
     <svg id="source-icon" class="svg-icon svg-path-icon">
@@ -1283,32 +1315,32 @@ if (isset($_GET) && count($_GET)) {
         <path d="M70.7,35.2c2-0.7,3.3-2.6,3.3-4.7v-3.9c-8.3,1.4-12.8,4.2-16.5,8.6c-3.7,4.4-6.4,10.4-6.4,18.1v16.2h17.7   c2.9,0,5.2-2.3,5.2-5.2V46.4H61.1c0.7-2.7,1.9-4.9,3.4-6.7C66.1,37.7,68,36.2,70.7,35.2z"/>
       </svg>
     </svg>
-    <a id="source" href="#"></a>
+    <a id="source" href="#" title="Visit source blog (X)"></a>
       </div>
     </div>
       <div id="date" class="header-container"></div>
       <div id="buttons" class="header-container">
       <select id="type">
-        <option value="all">both</option>
-        <option value="photo">photo</option>
-        <option value="video">video</option>
+        <option value="all">both (B)</option>
+        <option value="photo">photo (N)</option>
+        <option value="video">video (V)</option>
       </select>
       <input type="text" id="view-blog-name" placeholder="Blog name">
-      <a id="view-blog" class="button" href="#">
+      <a id="view-blog" class="button" href="#" title="Visit specific blog">
         <svg id="view-blog-likes-icon" class="svg-icon">
           <svg viewBox="0 0 100 100" x="0px" y="0px" width="100%" height="100%">
             <path d="M77.82,8.13H22.18A22.18,22.18,0,0,0,0,30.31V69.69A22.18,22.18,0,0,0,22.18,91.87H77.82A22.18,22.18,0,0,0,100,69.69V30.31A22.18,22.18,0,0,0,77.82,8.13ZM81.41,74a3.59,3.59,0,0,1-3.59,3.59H22.17A3.59,3.59,0,0,1,18.59,74V70a3.59,3.59,0,0,1,3.59-3.59H77.83A3.59,3.59,0,0,1,81.41,70v4Zm0-22a3.59,3.59,0,0,1-3.59,3.59H22.17A3.59,3.59,0,0,1,18.59,52V48a3.59,3.59,0,0,1,3.59-3.59H77.83A3.59,3.59,0,0,1,81.41,48v4Zm0-22.59A3.59,3.59,0,0,1,77.83,33H22.17a3.59,3.59,0,0,1-3.59-3.59v-4a3.59,3.59,0,0,1,3.59-3.59H77.83a3.59,3.59,0,0,1,3.59,3.59v4Z"/>
           </svg>
         </svg>
       </a>
-      <a id="likes" class="button" href="#">
+      <a id="likes" class="button" href="#" title="Liked posts">
         <svg id="likes-icon" class="svg-icon">
           <svg viewBox="0 0 100 100" x="0px" y="0px"  width="100%" height="100%">
             <path d="M45.8,80.3c2.3,2.3,6.1,2.3,8.4,0C64.5,70,85.1,50.9,87.6,44.8c1-2.4,1.5-4.9,1.4-7.6c-0.1-9.2-6.9-17-16-18.9   c-9-1.8-15.7,3.5-20.5,9.3c-1.3,1.6-3.7,1.6-5,0C42.7,21.8,36,16.5,27,18.3c-9,1.8-15.8,9.7-16,18.9c0,2.7,0.5,5.3,1.4,7.6   C14.9,50.9,35.5,70,45.8,80.3z"/>
           </svg>
         </svg>
       </a>
-      <a id="like-post" class="button" href="#">
+      <a id="like-post" class="button" href="#" title="Like this post (L)">
         <svg id="like-post-icon" class="svg-icon">
           <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
             <path d="M 30.267578,17.945312 C 29.213672,17.961328 28.125,18.075781 27,18.300781 c -9,1.8 -15.8,9.698438 -16,18.898438 0,2.7 0.500391,5.301562 1.400391,7.601562 2.5,6.1 23.10039,25.2 33.40039,35.5 2.3,2.3 5.485219,2.3 7.785219,0 l 0,-4.326172 0,-8.267609 -18.957,0 0,-21.375 18.957,0 0,-18.957 21.375,0 0,18.957 c 11.687468,0 0,0 11.687468,0 0.748416,-1.040852 0.657618,-0.81502 0.951141,-1.531219 1,-2.4 1.500391,-4.901562 1.400391,-7.601562 -0.1,-9.2 -6.9,-16.998438 -16,-18.898438 -9,-1.8 -15.7,3.498828 -20.5,9.298828 -1.3,1.6 -3.7,1.6 -5,0 -4.2,-5.075 -9.855078,-9.766406 -17.232422,-9.654297 z" />
@@ -1316,7 +1348,7 @@ if (isset($_GET) && count($_GET)) {
           </svg>
         </svg>
       </a>
-      <a id="following" class="button" href="#">
+      <a id="following" class="button" href="#" title="Followed blogs">
         <svg id="following-icon" class="svg-icon">
           <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
             <path d="M1.25,33.75H17.5V17.5H1.25V33.75z M1.25,58.125H17.5v-16.25    H1.25V58.125z M1.25,82.5H17.5V66.25H1.25V82.5z M28.334,17.5v16.25H98.75V17.5H28.334z M28.334,58.125H98.75v-16.25H28.334    V58.125z M28.334,82.5H98.75V66.25H28.334V82.5z">
@@ -1324,7 +1356,7 @@ if (isset($_GET) && count($_GET)) {
           </svg>
         </svg>
       </a>
-      <a id="follow" class="button" href="#">
+      <a id="follow" class="button" href="#" title="Follow this blog (F)">
         <svg id="follow-icon" class="svg-icon">
           <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
             <path d="m 1.25,33.75 16.25,0 0,-16.25 -16.25,0 z m 0,24.375 16.25,0 0,-16.25 -16.25,0 z m 0,24.375 16.25,0 0,-16.25 -16.25,0 z m 27.084,-65 0,16.25 70.416,0 0,-16.25 z m 0,40.625 18.276169,0 0,-16.25 -18.276169,0 z m 0,24.375 18.276169,0 0,-16.25 -18.276169,0 z" />
@@ -1332,14 +1364,14 @@ if (isset($_GET) && count($_GET)) {
           </svg>
         </svg>
       </a>
-      <a id="open-post" class="button" href="#">
+      <a id="open-post" class="button" href="#" title="Open this post (T)">
         <svg id="open-post-icon" class="svg-icon">
           <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
             <path d="m 65,17.999985 0,8.875 c -13.1574,3.3428 -31.9085,12.29 -38,31.12503 15.2216,-13.35813 36.7436,-11.90278 38,-11.84378 l 0,8.87498 24,-18.49998 z m -50,6 c -2.0943,2.1e-4 -3.9998,1.90566 -4,4 l 0,50.00003 c 2e-4,2.0943 1.9057,3.9998 4,4 l 52,0 c 2.0943,-2e-4 3.9998,-1.9057 4,-4 l 0,-22.5625 -3.5625,2.75 -4.4375,3.4375 0,12.375 -44,0 0,-42.00003 24.0938,0 c 5.8517,-3.74585 12.0628,-6.32105 17.625,-8 z" />
           </svg>
         </svg>
       </a>
-      <a id="fullscreen" class="button" href="#">
+      <a id="fullscreen" class="button" href="#" title="Toggle fullscreen">
         <svg id="fullscreen-icon" class="svg-icon">
           <svg x="0px" y="0px" viewBox="0 0 100 100"  width="100%" height="100%">
             <polygon style="" points="85.669,76.831 71.338,62.5 62.5,71.338 76.831,85.669 62.5,100 100,100 100,62.5 "/>
@@ -1357,6 +1389,12 @@ if (isset($_GET) && count($_GET)) {
     <!--<img class="photo" id="photo" src="https://78.media.tumblr.com/e571c5a59194a56d45230be599b97db4/tumblr_p5d0bdvDXG1vt4jtuo1_1280.jpg" />-->
   </div>
   <div id="footer"></div>
+
+  <div id="controls">
+    <div id="prev" class="controls"></div>
+    <div id="next" class="controls"></div>
+  </div>
+
 <svg style="display:none" id="svg-icons">
   <svg id="error-icon">
     <svg viewBox="0 0 253 253" x="0px" y="0px" width="100%" height="100%">
