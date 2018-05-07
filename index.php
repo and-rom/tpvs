@@ -1007,6 +1007,7 @@ if (isset($_GET) && count($_GET)) {
         currentLayout.show(parseInt(e.originalEvent.wheelDelta || - e.originalEvent.detail));
     });
     $("#prev, #next").on('click',function (e){
+        e.stopPropagation();
         switch(this.id) {
             case 'prev':
                 currentLayout.show(1);
