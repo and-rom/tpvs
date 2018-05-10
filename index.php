@@ -138,6 +138,12 @@ if (isset($_GET) && count($_GET)) {
                 for ($page = 1; $page<=$totalPages; $page++) {
                     $options['offset']=($page-1)*$options['limit'];
                     $followedBlogs = $client->getFollowedBlogs($options);
+                    /*
+                    foreach ($followedBlogs->blogs as $followedBlog) {
+                        $followedBlog->avatar = $client->getBlogAvatar($followedBlog->name, 16);
+                        $obj->blogs[] = $followedBlog;
+                    }
+                    */
                     $obj->blogs = array_merge($obj->blogs,$followedBlogs->blogs);
                 }
                 $response->followed_blogs = $obj;
@@ -669,9 +675,9 @@ if (isset($_GET) && count($_GET)) {
             if (elapsed < 60000) {return Math.round(elapsed/1000) + ' seconds ago';}
             else if (elapsed < 3600000) {return Math.round(elapsed/60000) + ' minutes ago';}
             else if (elapsed < 86400000 ) {return Math.round(elapsed/3600000) + ' hours ago';}
-            else if (elapsed < 2592000000) {return 'approximately ' + Math.round(elapsed/86400000) + ' days ago';}
-            else if (elapsed < 31536000000) {return 'approximately ' + Math.round(elapsed/2592000000) + ' months ago';}
-            else {return 'approximately ' + Math.round(elapsed/31536000000) + ' years ago';}
+            else if (elapsed < 2592000000) {return 'approx. ' + Math.round(elapsed/86400000) + ' days ago';}
+            else if (elapsed < 31536000000) {return 'approx. ' + Math.round(elapsed/2592000000) + ' months ago';}
+            else {return 'approx. ' + Math.round(elapsed/31536000000) + ' years ago';}
         },
         seek: function(direction) {
             if (this.slides[this.currentSlide].type == "video" && typeof this.iframe[0] !== 'undefined' && !isNaN(this.iframe[0].duration)) {
@@ -851,6 +857,52 @@ if (isset($_GET) && count($_GET)) {
     $("#follow").on('click',function (e){
        currentLayout.follow();
     });
+    $("#following").on('click',function (e){
+        if($.trim($("#followed-blogs-list").html())=='') {
+            $("#loader").show();
+            $.ajax({
+                dataType: "json",
+                url: "./index.php",
+                async: true,
+                data: {action: "followed"},
+                success: function (data) {
+                    $("#loader").hide();
+
+                    data.followed_blogs.blogs.sort(function(a,b) {
+                        return (a.updated < b.updated) ? 1 : ((b.updated < a.updated) ? -1 : 0);
+                    });
+
+                    $.each(data.followed_blogs.blogs, function(i, obj) {
+                        $("#followed-blogs-list").append($("<li> </li>").append(
+                            $('<a href="#" > </a>').addClass('blog-name').html(obj.name),
+                            $('<span> </span>').addClass('updated').html(layout$.age(obj.updated)),
+                        ));
+                    });
+                $("#followed-blogs").show();
+                }
+            });
+        } else {
+            $("#followed-blogs").show();
+        }
+    });
+    $(document).on('click', '.blog-name', function (e){
+        $("#followed-blogs").hide();
+        $('#content').empty();
+        layouts.push({
+            __proto__: layout$,
+            layoutType: "blog",
+            blog:$(this).html()
+        });
+        currentLayout = layouts[layouts.length-1];
+        $("#type").val(currentLayout.type);
+        currentLayout.update();
+        $("#back").show();
+        if (layouts.length > 2) $("#home").show();
+        $("#header, #footer").hide();
+    });
+    $("#close").on('click',function (e){
+        $("#followed-blogs").hide();
+    });
     $("#fullscreen").on('click',function (e){
         var requestFullScreen = document.documentElement.requestFullscreen || document.documentElement.mozRequestFullScreen || document.documentElement.webkitRequestFullScreen || document.documentElement.msRequestFullscreen;
         var cancelFullScreen = document.exitFullscreen || document.mozCancelFullScreen || document.webkitExitFullscreen || document.msExitFullscreen;
@@ -997,6 +1049,7 @@ if (isset($_GET) && count($_GET)) {
                 break;
             case 220: // '\'
                 stealthMode = !stealthMode;
+                setMessage("Stealth mode " + (stealthMode ? "enabled" : "disabled"));
                 break;
             default:
                 break;
@@ -1004,6 +1057,7 @@ if (isset($_GET) && count($_GET)) {
     });
     // mouse wheel
     $("#content").on('mousewheel DOMMouseScroll',function (e){
+        e.stopPropagation();
         currentLayout.show(parseInt(e.originalEvent.wheelDelta || - e.originalEvent.detail));
     });
     $("#prev, #next").on('click',function (e){
@@ -1021,13 +1075,15 @@ if (isset($_GET) && count($_GET)) {
     var xDown,yDown,xUp,yUp = null;
     var xDiffPrev = 0;
     var touchOff = false;
-    $(document).bind('touchstart', function (ev) {
+    $("#content").bind('touchstart', function (ev) {
+        ev.stopPropagation();
         if ( touchOff ) {return;}
         var e = ev.originalEvent;
         xDown = e.touches[0].clientX;
         yDown = e.touches[0].clientY;
     });
-    $(document).bind('touchmove', function (ev) {
+    $("#content").bind('touchmove', function (ev) {
+        ev.stopPropagation();
         if ( touchOff ) {return;}
         var e = ev.originalEvent;
         if ( ! xDown || ! yDown ) {return;}
@@ -1055,7 +1111,8 @@ if (isset($_GET) && count($_GET)) {
         }*/
 
     });
-    $(document).bind('touchend', function (ev) {
+    $("#content").bind('touchend', function (ev) {
+        ev.stopPropagation();
         if ( touchOff ) {return;}
         if ( typeof xUp == 'undefined' || ! xUp || ! yUp ) {return;}
         var xDiff = xDown - xUp;
@@ -1187,7 +1244,7 @@ if (isset($_GET) && count($_GET)) {
         width: 1em;
         height: 1em;
         animation: spin 1s linear infinite;
-        z-index: 2;
+        z-index: 10;
     }
     @keyframes spin {
         0% { transform: rotate(0deg); }
@@ -1239,15 +1296,54 @@ if (isset($_GET) && count($_GET)) {
     #footer a {
         color:#8cbfd9;
     }
-    #header, #messages, #footer {
+    #header, #messages, #footer, #followed-blogs {
         overflow-y: scroll;
         color:white;
         background: rgba(40, 40, 40, .5);
         text-shadow: 1px 1px 3px black, -1px -1px 3px black, -1px 1px 3px black, 1px -1px 3px black;
         z-index:1;
     }
-    #header::-webkit-scrollbar, #messages::-webkit-scrollbar, #footer::-webkit-scrollbar {
+    #header::-webkit-scrollbar, #messages::-webkit-scrollbar, #footer::-webkit-scrollbar, #followed-blogs::-webkit-scrollbar, #followed-blogs-list::-webkit-scrollbar {
         display: none;
+    }
+    #followed-blogs {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right:0;
+        margin: 0 auto;
+        height: 100%;
+        width: max-content;
+        background: #000000ed;
+        overflow-y: initial;
+        text-align: right;
+        z-index:2;
+    }
+    #followed-blogs-list {
+        overflow: scroll;
+        height: calc(100% - 3ex);
+        text-align: left;
+        list-style: none;
+    }
+    #followed-blogs-list li {
+        margin-bottom: 1px;
+        border-bottom: 1px solid #808080;
+    }
+    #followed-blogs-list li:last-child {
+        border: none;
+    }
+    .blog-name {
+        margin-right: 1ex;
+        text-decoration: none;
+    }
+    .updated {
+        text-align: right;
+        display: block;
+        /*float: right;*/
+        font-style: italic;
+        font-size: smaller;
+        color: #BDBDBD;
     }
     #controls {
         display: none;
@@ -1389,6 +1485,16 @@ if (isset($_GET) && count($_GET)) {
   <div id="loader"></div>
   <div id="content">
     <!--<img class="photo" id="photo" src="https://78.media.tumblr.com/e571c5a59194a56d45230be599b97db4/tumblr_p5d0bdvDXG1vt4jtuo1_1280.jpg" />-->
+  </div>
+  <div id="followed-blogs">
+    <a id="close" href="#" title="Close">
+      <svg id="close-icon" class="svg-icon">
+        <svg x="0px" y="0px" viewBox="0 0 100 100" width="100%" height="100%">
+          <path d="M88.8,77.5L60.6,49.3l28.2-28.2c1.2-1.2,1.2-3.1,0-4.2l-8.5-8.5L50,38.7L19.6,8.3l-8.5,8.5c-1.2,1.2-1.2,3.1,0,4.2  l28.2,28.2L11.2,77.5c-1.2,1.2-1.2,3.1,0,4.2l8.5,8.5L50,59.9l30.4,30.4l8.5-8.5C90,80.6,90,78.7,88.8,77.5z"/>
+        </svg>
+      </svg>
+    </a>
+    <ul id="followed-blogs-list"></ul>
   </div>
   <div id="footer"></div>
 
