@@ -296,7 +296,9 @@ if (isset($_GET) && count($_GET)) {
                        before:   this.before,
                        type:   this.type},
                 context: this,
-                success: this.response
+                success: this.response,
+                error: this.error/*,
+                complete: this.complete*/
             });
         },
         like: function(action){
@@ -335,7 +337,7 @@ if (isset($_GET) && count($_GET)) {
                         $("#loader").hide();
                         if (data.posts.length == 0) {
                             this.noMore = true;
-                            setMessage("No more posts.")
+                            setMessage("No more posts.");
                         }
                         this.slides = this.slides.concat(data.posts);
                         console.log("Total posts: " + this.slides.length);
@@ -378,6 +380,17 @@ if (isset($_GET) && count($_GET)) {
                     break;
             }
         },
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log(textStatus, errorThrown);
+            setMessage("Update error!");
+            this.updateLocked = false;
+        },
+        /*
+        complete: function(jqXHR, textStatus) {
+            console.log(textStatus);
+            this.updateLocked = false;
+        },
+        */
         lock: function() {
             console.log("Locked.");
             $("#loader").show();
@@ -824,6 +837,7 @@ if (isset($_GET) && count($_GET)) {
             $('#view-blog').click();
     });
     $("#home, #back").on('click',function (e){
+        if (layouts.length <= 1) return;
         switch(this.id) {
             case 'home':
                 while (layouts.length > 1) {
