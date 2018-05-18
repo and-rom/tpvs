@@ -252,8 +252,8 @@ if (isset($_GET) && count($_GET)) {
   <!--<link rel="icon" href="img/favicon.ico" type="image/x-icon">-->
   <!--<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon">-->
   <!--<link rel="stylesheet" type="text/css" href="style.css">-->
-  <!--<script type="text/javascript" src="index.js"></script>-->
-  <script src="js/jquery-3.3.1.min.js"></script>
+  <script type="text/javascript" src="js/js.cookie.js"></script>
+  <script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
   <script type="text/javascript">
   $(document).ready(function(){
     console.log("Doc ready");
@@ -276,7 +276,12 @@ if (isset($_GET) && count($_GET)) {
         wasHidden: false,
         updateLocked: false,
         // Methods
-        update: function(){
+        save: function(){
+            Cookies.set("layoutType", this.layoutType, { expires : 10 });
+            Cookies.set("blog", this.blog, { expires : 10 });
+            Cookies.set("type", this.type, { expires : 10 });
+        },
+        update: function(restore = false, layoutType = "", blog = "", before = "", type = ""){
             console.log("Updating " + this.blog);
             if (this.updateLocked) {
                 console.log("Update locked");
@@ -284,19 +289,20 @@ if (isset($_GET) && count($_GET)) {
             }
             $("#loader").show();
             //this.currentPage++;
-            this.before = this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.slides[this.slides.length-1].id : "";
+
+            this.before = before != "" ? before : this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.slides[this.slides.length-1].id : "";
             console.log("Before " + this.before);
             $.ajax({
                 dataType: "json",
                 url: "./index.php",
                 async: true,
-                data: {action: this.layoutType,
-                       blog:   this.blog,
+                data: {action: layoutType != "" ? layoutType : this.layoutType,
+                       blog:   blog != "" ? blog : this.blog,
                        //page:   this.currentPage,
                        before:   this.before,
-                       type:   this.type},
+                       type:   type != "" ? type : this.type},
                 context: this,
-                success: this.response,
+                success: restore ? this.restore : this.response,
                 error: this.error/*,
                 complete: this.complete*/
             });
@@ -326,6 +332,11 @@ if (isset($_GET) && count($_GET)) {
                 context: this,
                 success: this.response
             });
+        },
+        restore:  function(data){
+            this.slides = [];
+            this.response(data);
+            setMessage("Restored");
         },
         response: function(data){
             console.log("Response");
@@ -412,6 +423,7 @@ if (isset($_GET) && count($_GET)) {
         },
         display: function(){
             console.log("Current slide: " + this.currentSlide + "/" + this.slides.length + " >" + this.slides.length/2);
+
             this.lock();
             if (this.slides.length == 0) {
                 this.unlock();
@@ -425,6 +437,14 @@ if (isset($_GET) && count($_GET)) {
             } else {
                 this.displayVideo();
             }
+
+            if (this.currentSlide-1 < 0 ) {
+                Cookies.set("before", "", { expires : 10 });
+            } else {
+                Cookies.set("before", this.slides[this.currentSlide-1].id, { expires : 10 });
+                console.log("Previous slide id : " + this.slides[this.currentSlide-1].id);
+            }
+            console.log("Current slide id : " + this.slides[this.currentSlide].id);
         },
         displayPostInfo: function() {
             $("#blog-name").html(this.slides[this.currentSlide].blog_name);
@@ -760,9 +780,43 @@ if (isset($_GET) && count($_GET)) {
 
     currentLayout.update();
 
+    console.log("Cookies before_id: " + Cookies.get("before"));
+
+    if (typeof Cookies.get("before") !== 'undefined') {
+        console.log("Dashboard MAY be restored");
+        if (confirm('Do you want to restore dash?')) {
+            console.log("Restore");
+            $('#content').empty();
+            if (Cookies.get("layoutType") == "dash") {
+                console.log("Restore dash");
+                currentLayout.update(true, Cookies.get("layoutType"),Cookies.get("blog"),Cookies.get("before"),Cookies.get("type"));
+            } else {
+                console.log("Restore " + Cookies.get("layoutType") + " " + Cookies.get("blog") + " " + Cookies.get("type"));
+                layouts.push({
+                    __proto__: layout$,
+                    layoutType: Cookies.get("layoutType"),
+                    blog: Cookies.get("blog"),
+                    type: Cookies.get("type")
+                });
+                currentLayout = layouts[layouts.length-1];
+                $("#type").val(currentLayout.type);
+                currentLayout.update(true, "","",Cookies.get("before"),"");
+                $("#back").show();
+                $("#header, #footer").hide();
+            }
+        } else {
+            console.log("Don't restore");
+        }
+    } else {
+        console.log("Dashboard MAY NOT be restored");
+    }
+
+    currentLayout.save();
+
     $(window).resize(function (e){
         currentLayout.resize()
     });
+
     $("#content, #controls").on('click',function (e){
 
         if ($(currentLayout.iframe).is("video")) {
@@ -827,6 +881,7 @@ if (isset($_GET) && count($_GET)) {
         currentLayout = layouts[layouts.length-1];
         $("#type").val(currentLayout.type);
         currentLayout.update();
+        currentLayout.save();
         $("#back").show();
         if (layouts.length > 2) $("#home").show();
         $("#header, #footer").hide();
@@ -910,6 +965,7 @@ if (isset($_GET) && count($_GET)) {
         currentLayout = layouts[layouts.length-1];
         $("#type").val(currentLayout.type);
         currentLayout.update();
+        currentLayout.save();
         $("#back").show();
         if (layouts.length > 2) $("#home").show();
         $("#header, #footer").hide();
@@ -933,6 +989,7 @@ if (isset($_GET) && count($_GET)) {
         currentLayout.currentPage=0;
         currentLayout.slides=[];
         currentLayout.update();
+        currentLayout.save();
     });
     var timer;
     var hided = false;
