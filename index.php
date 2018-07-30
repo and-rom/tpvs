@@ -906,6 +906,7 @@ if (isset($_GET) && count($_GET)) {
 
         currentLayout = layouts[layouts.length-1];
         $("#type").val(currentLayout.type);
+        currentLayout.save();
         currentLayout.display();
         if (layouts.length == 1) {
             $("#back").hide();
