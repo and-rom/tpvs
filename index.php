@@ -277,9 +277,9 @@ if (isset($_GET) && count($_GET)) {
         updateLocked: false,
         // Methods
         save: function(){
-            Cookies.set("layoutType", this.layoutType, { expires : 10 });
-            Cookies.set("blog", this.blog, { expires : 10 });
-            Cookies.set("type", this.type, { expires : 10 });
+            Cookies.set("layoutType", this.layoutType, { expires : 0.5 });
+            Cookies.set("blog", this.blog, { expires : 0.5 });
+            Cookies.set("type", this.type, { expires : 0.5 });
         },
         update: function(restore = false, layoutType = "", blog = "", before = "", type = ""){
             console.log("Updating " + this.blog);
@@ -441,10 +441,10 @@ if (isset($_GET) && count($_GET)) {
 
             if (this.currentSlide-1 < 0 ) {
                 console.log("Setting cookie before: NONE");
-                Cookies.set("before", "", { expires : 10 });
+                Cookies.set("before", "", { expires : 0.5 });
             } else {
                 console.log("Setting cookie before: " + this.slides[this.currentSlide-1].id);
-                Cookies.set("before", this.slides[this.currentSlide-1].id, { expires : 10 });
+                Cookies.set("before", this.slides[this.currentSlide-1].id, { expires : 0.5 });
                 console.log("Previous slide id : " + this.slides[this.currentSlide-1].id);
             }
             console.log("Current slide id : " + this.slides[this.currentSlide].id);
