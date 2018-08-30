@@ -1,5 +1,13 @@
 <?php
-//TODO: Show following blogs on side panel with scroll
+
+function version() {
+    $hash = trim(exec('git log --pretty="%h" -n1 HEAD'));
+    $commits = trim(exec('git rev-list HEAD | wc -l'));
+    $date = new \DateTime(trim(exec('git log -n1 --pretty=%ci HEAD')));
+    $date->setTimezone(new \DateTimeZone('UTC'));
+
+    return sprintf('v1.%s.%s (%s)', $commits, $hash, $date->format('Y-m-d H:i:s'));
+}
 
 if (isset($_GET) && count($_GET)) {
 
@@ -238,6 +246,7 @@ if (isset($_GET) && count($_GET)) {
 }
 ?>
 <!DOCTYPE html>
+<!-- <?php echo version();?> -->
 <html>
 <head>
   <title>Tumblr Photo Video Slider</title>
