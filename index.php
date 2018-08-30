@@ -1,7 +1,7 @@
 <?php
 
 function version() {
-    $major = "1"
+    $major = "1";
     $minor = trim(exec('git rev-list HEAD | wc -l'));
     $hash = trim(exec('git log --pretty="%h" -n1 HEAD'));
     $date = new \DateTime(trim(exec('git log -n1 --pretty=%ci HEAD')));
