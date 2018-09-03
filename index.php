@@ -56,6 +56,7 @@ if (isset($_GET) && count($_GET)) {
             case "dash":
             case "blog":
             case "likes":
+            case "tagged":
                 //$options['offset']=($page-1)*$options['limit'];
                 $options['reblog_info'] = true;
                 switch ($action) {
@@ -69,6 +70,7 @@ if (isset($_GET) && count($_GET)) {
                         }
                     break;
                     case "likes":
+                    case "tagged":
                         if (isset($_GET['before'])) {
                             $options['before'] = $_GET['before'];
                         }
@@ -103,6 +105,20 @@ if (isset($_GET) && count($_GET)) {
                         //} else {
                         //    $code = 400;
                         //}
+                    break;
+                    case "tagged":
+                        if (isset($_GET['tag'])) {
+                            $tag = $_GET['tag'];
+                        } else {
+                            $code = 400;
+                        }
+                        try {
+                            $result = $client->getTaggedPosts($tag, $options);
+                            $posts = $result;
+                        } catch (Exception $e) {
+                            $code = $e->getCode();
+                            $posts = [];
+                        }
                     break;
                 }
                 $response->posts = [];
