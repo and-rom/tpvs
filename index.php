@@ -276,8 +276,7 @@ if (isset($_GET) && count($_GET)) {
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta http-equiv="Cache-Control" content="max-age=3600, must-revalidate">
   <meta name="theme-color" content="#222222" />
-  <!--<link rel="icon" href="img/favicon.ico" type="image/x-icon">-->
-  <!--<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon">-->
+  <link rel="icon" href="/img/tpvs16.png" type="image/png">
   <!--<link rel="stylesheet" type="text/css" href="style.css">-->
   <script type="text/javascript" src="js/js.cookie.js"></script>
   <script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
@@ -1107,7 +1106,7 @@ if (isset($_GET) && count($_GET)) {
     var enabled = true;
     $(document).on('keydown',function(e){
         var code = (e.keyCode ? e.keyCode : e.which);
-        if (e.altKey && code == 81) {
+        if (e.altKey && code == 81) { // Alt + 'q'
             enabled = !enabled;
             setMessage("Hot keys " + (enabled ? "enabled" : "disabled"));
             return;
