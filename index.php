@@ -133,6 +133,7 @@ if (isset($_GET) && count($_GET)) {
                     $obj->liked_timestamp = (isset($post->liked_timestamp) ? $post->liked_timestamp : "" );
                     $obj->rebloged_from = (isset($post->reblogged_from_name) ? $post->reblogged_from_name : "" );
                     $obj->source = (isset($post->reblogged_root_name) ? $post->reblogged_root_name : "" );
+                    $obj->tags = (isset($post->tags) ? $post->tags : "" );
                     $obj->caption = (isset($post->caption) ? $post->caption : "" );
                     switch ($post->type) {
                         case "photo":
@@ -495,7 +496,14 @@ if (isset($_GET) && count($_GET)) {
             }
 
             $("#date").html(this.age(this.slides[this.currentSlide].timestamp));
-            $("#footer").html(this.slides[this.currentSlide].caption);
+
+            var tags = "";
+            $.each(this.slides[this.currentSlide].tags, function(i, obj) {
+                        tags += "<a href=\"#\" >#" + obj + "</a> ";
+                    });
+            tags = "<p>" + tags + "</p>";
+
+            $("#footer").html(this.slides[this.currentSlide].caption + tags);
         },
         clearPostInfo: function(partial = false) {
             if (!partial)
