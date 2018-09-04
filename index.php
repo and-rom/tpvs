@@ -76,12 +76,17 @@ if (isset($_GET) && count($_GET)) {
                         }
                     break;
                 }
+
+                do{//start of slides collection
                 switch ($action) {
                     case "dash":
                         $result = $client->getDashboardPosts($options);
                         $posts = $result->posts;
                     break;
                     case "blog":
+                        if (isset($_GET['tag']) && !empty($_GET['tag'])) {
+                            $options['tag'] = $_GET['tag'];
+                        }
                         if (isset($_GET['blog'])) {
                             $blog = $_GET['blog'];
                         } else {
@@ -123,6 +128,10 @@ if (isset($_GET) && count($_GET)) {
                 }
                 $response->posts = [];
                 foreach ($posts as $post) {
+                    if (isset($_GET['own']) && $_GET['own']=="1" && isset($post->reblogged_from_name)) continue;
+                    /*if (isset($_GET['own']) && $_GET['own']=="1" && isset($post->reblogged_from_name)) {
+                        continue;
+                    }*/
                     $obj = new stdClass;
                     $obj->blog_name = $post->blog_name;
                     $obj->type = $post->type;
@@ -149,10 +158,47 @@ if (isset($_GET) && count($_GET)) {
                             $obj->video_url = (isset($post->video_url) ? $post->video_url : "" );
                             $response->posts[] = clone $obj;
                             break;
+                        /*case "text":
+                            $dom = new DOMDocument;
+                            libxml_use_internal_errors(true);
+                            $dom->loadHTML(((isset($post->body) && !empty($post->body)) ? $post->body : "<p></p>" ));
+                            libxml_clear_errors();
+                            $images = $dom->getElementsByTagName('img');
+                            if (!empty($images)) {
+                            $obj->type = "photo";
+                                foreach ($images as $image) {
+                                    $obj->src = $image->getAttribute('src');
+                                    $response->posts[] = clone $obj;
+                                }
+                            }
+                            break;*/
                         default:
                             break;
                     }
                 }
+                /*if (isset($_GET['own']) && $_GET['own']=="1") {
+                    $response->last_id = end($posts)->id;
+                    $code = 203;
+                }*/
+                $last_post = end($posts);
+                if (empty($response->posts) && !empty($posts)) {
+                    switch ($action) {
+                        case "dash":
+                        case "blog":
+                            $options['before_id'] = $last_post->id;
+                        break;
+                        case "likes":
+                        case "tagged":
+                            $options['before'] = $last_post->liked_timestamp;
+                        break;
+                    }
+                }
+                } while (empty($response->posts) && !empty($posts));//end of slides collection
+                //} while (count($response->posts)<10);//end of slides collection
+
+                if (isset($last_post->id)) $response->last_id = $last_post->id;
+                if (isset($last_post->liked_timestamp)) $response->last_liked_timestamp = $last_post->liked_timestamp;
+
                 $code = isset($code) ? $code : 200;
                 break;
             case "followed":
@@ -213,7 +259,6 @@ if (isset($_GET) && count($_GET)) {
                 $code = 405;
                 break;
         }
-
     } else {
         // start the old gal up
         $callbackUrl = $_SERVER['REQUEST_SCHEME']."://".$_SERVER['SERVER_NAME'].dirname($_SERVER['SCRIPT_NAME']);
@@ -236,6 +281,9 @@ if (isset($_GET) && count($_GET)) {
             break;
         case 202:
             $response->msg = "Following";
+            break;
+        case 203:
+            $response->msg = "Own posts. Last id";
             break;
         case 400:
             $response->msg = "Bad Request";
@@ -292,9 +340,11 @@ if (isset($_GET) && count($_GET)) {
         layoutType: "dash",
         blog:"",
         type:"all",
+        own:"0",
         currentSlide:0,
         //currentPage:0,
         before:"",
+        tag:"",
         slides: [],
         noMore: false,
         iframe: null,
@@ -303,6 +353,7 @@ if (isset($_GET) && count($_GET)) {
         updateLocked: false,
         // Methods
         save: function(){
+        console.log("Saving.");
             Cookies.set("layoutType", this.layoutType, { expires : 0.5 });
             Cookies.set("blog", this.blog, { expires : 0.5 });
             Cookies.set("type", this.type, { expires : 0.5 });
@@ -316,7 +367,8 @@ if (isset($_GET) && count($_GET)) {
             $("#loader").show();
             //this.currentPage++;
 
-            this.before = before != "" ? before : this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.slides[this.slides.length-1].id : "";
+            //this.before = before != "" ? before : this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.slides[this.slides.length-1].id : "";
+            this.before = before != "" ? before : this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.last_id : "";
             console.log("Before " + this.before);
             $.ajax({
                 dataType: "json",
@@ -326,7 +378,9 @@ if (isset($_GET) && count($_GET)) {
                        blog:   blog != "" ? blog : this.blog,
                        //page:   this.currentPage,
                        before:   this.before,
-                       type:   type != "" ? type : this.type},
+                       tag:this.tag,
+                       type:   type != "" ? type : this.type,
+                       own: this.own},
                 context: this,
                 success: restore ? this.restore : this.response,
                 error: this.error/*,
@@ -371,7 +425,7 @@ if (isset($_GET) && count($_GET)) {
                     $(document).trigger('auth');
                     if (data.hasOwnProperty('posts')) {
                         console.log("Get " + data.posts.length + " posts");
-                        console.log(data.posts);
+                        console.log(data); //console.log(data.posts);
                         $("#loader").hide();
                         if (data.posts.length == 0) {
                             this.noMore = true;
@@ -384,6 +438,7 @@ if (isset($_GET) && count($_GET)) {
                             this.display();
                         }
                     }
+                    if (data.hasOwnProperty('last_id')) this.last_id = data.last_id;
                     break;
                 case 404:
                     setMessage(data.msg);
@@ -436,7 +491,7 @@ if (isset($_GET) && count($_GET)) {
         },
         unlock: function() {
             console.log("Unlocked.");
-            $("#loader").hide();
+            if (!this.updateLocked) $("#loader").hide();
             this.locked = false;
         },
         checkHidden: function() {
@@ -498,7 +553,7 @@ if (isset($_GET) && count($_GET)) {
 
             var tags = "";
             $.each(this.slides[this.currentSlide].tags, function(i, obj) {
-                        tags += "<a href=\"#\" >#" + obj + "</a> ";
+                        tags += "<a href=\"#\" class=\"post-tag\">#" + obj + "</a> ";
                     });
             tags = "<p>" + tags + "</p>";
 
@@ -675,7 +730,7 @@ if (isset($_GET) && count($_GET)) {
         },
         next: function(){
             console.log("Next");
-            if (this.currentSlide > this.slides.length/2) {
+            if (this.currentSlide+1 > this.slides.length/2) {
                 if (!this.noMore) this.update();
                 this.updateLocked = true;
             }
@@ -780,6 +835,8 @@ if (isset($_GET) && count($_GET)) {
             console.log("this.layoutType: " + this.layoutType);
             console.log("this.blog: " + this.blog);
             console.log("this.type: " + this.type);
+            console.log("this.tag: " + this.tag);
+            console.log("this.own: " + this.own);
             console.log("this.currentSlide: " + this.currentSlide);
             console.log("this.currentPage: " + this.currentPage);
             console.log("this.slides.length: " + this.slides.length);
@@ -903,9 +960,11 @@ if (isset($_GET) && count($_GET)) {
                         layouts.push({
                             __proto__: layout$,
                             layoutType: "blog",
-                            blog:$('#view-blog-name').val()
+                            blog:$('#view-blog-name').val(),
+                            own:($("#view-blog-name-own").is(':checked') ? "1" : "0")
                         });
                         $('#view-blog-name').val('');
+                        $('#view-blog-name-own').attr('checked', false);
                     } else {
                         return;
                     }
@@ -920,8 +979,10 @@ if (isset($_GET) && count($_GET)) {
                     layouts.push({
                         __proto__: layout$,
                         layoutType: "blog",
-                        blog:$(this).html()
+                        blog:$(this).html(),
+                        own:($("#view-blog-name-own").is(':checked') ? "1" : "0")
                     });
+                    $('#view-blog-name-own').attr('checked', false);
                 } else {
                     return;
                 }
@@ -1022,6 +1083,35 @@ if (isset($_GET) && count($_GET)) {
         if (layouts.length > 2) $("#home").show();
         $("#header, #footer").hide();
     });
+    $(document).on('click', '.post-tag', function (e){
+        $("#followed-blogs").hide();
+        $('#content').empty();
+        var tag = $(this).html().split("#",2)[1];
+        var blog = currentLayout.slides[currentLayout.currentSlide].blog_name;
+        if (currentLayout.layoutType == "blog") {
+            console.log("Current layout is blog. Updating it.");
+            currentLayout.tag = tag;
+            currentLayout.currentSlide=0;
+            currentLayout.currentPage=0;
+            currentLayout.slides=[];
+        } else {
+            console.log("Current layout is dash or likes. Creating new layout and updating it.");
+            console.log(blog + "#" + tag);
+            layouts.push({
+                __proto__: layout$,
+                layoutType: "blog",
+                blog:blog,
+                tag:tag
+            });
+            currentLayout = layouts[layouts.length-1];
+            $("#type").val(currentLayout.type);
+            $("#back").show();
+            if (layouts.length > 2) $("#home").show();
+        }
+        currentLayout.update();
+        currentLayout.save();
+        $("#header, #footer").hide();
+    });
     $("#close").on('click',function (e){
         $("#followed-blogs").hide();
     });
@@ -1042,6 +1132,7 @@ if (isset($_GET) && count($_GET)) {
         currentLayout.slides=[];
         currentLayout.update();
         currentLayout.save();
+        $("#header, #footer").hide();
     });
     var timer;
     var hided = false;
@@ -1334,7 +1425,7 @@ if (isset($_GET) && count($_GET)) {
         display:none;
     }
     #view-blog-name {
-        display:none;
+        /*display:none;*/
         border: 0.02px solid white;
         color: white;
         background-color: transparent;
@@ -1424,8 +1515,12 @@ if (isset($_GET) && count($_GET)) {
         left:0;
         padding: 0 10px;
     }
-    #footer a {
+    #footer a:not(.post-tag) {
         color:#8cbfd9;
+    }
+    .post-tag {
+        text-decoration: none;
+        color: #6eb34d;
     }
     #header, #messages, #footer, #followed-blogs {
         overflow-y: scroll;
@@ -1555,6 +1650,7 @@ if (isset($_GET) && count($_GET)) {
         <option value="video">video (V)</option>
       </select>
       <input type="text" id="view-blog-name" placeholder="Blog name">
+      <input type="checkbox" id="view-blog-name-own" title="Own posts">
       <a id="view-blog" class="button" href="#" title="Visit specific blog">
         <svg id="view-blog-likes-icon" class="svg-icon">
           <svg viewBox="0 0 100 100" x="0px" y="0px" width="100%" height="100%">
