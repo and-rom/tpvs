@@ -1580,6 +1580,7 @@ if (isset($_GET) && count($_GET)) {
         width: 100%;
         background: #0f0;
         opacity: 0.8;
+        cursor: pointer;
     }
     .controls {
         height: 100%;
