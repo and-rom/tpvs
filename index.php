@@ -610,7 +610,7 @@ if (isset($_GET) && count($_GET)) {
                 //$(this.iframe).prop("muted",false);
                 //$(this.iframe).prop("muted",stealthMode && videoMuted);
                 $(this.iframe).prop("muted",videoMuted);
-                $(this.iframe).prop("preload","auto");
+                $(this.iframe).prop("preload","none");
 
                 var _this = this;
                 var img = new Image();
@@ -713,6 +713,12 @@ if (isset($_GET) && count($_GET)) {
         },
         show: function(whereTo) {
             if (!this.locked) {
+                if (this.slides[this.currentSlide].type == "video" && typeof this.iframe[0] !== 'undefined') {
+                    this.iframe[0].pause();
+                    $(this.iframe).attr('src','');
+                    $(this.iframe).find('source').last().attr('src','');
+                    this.iframe[0].load();
+                    }
                 var status;
                 if (whereTo > 0) {
                     status = this.prev();
