@@ -557,6 +557,7 @@ if (isset($_GET) && count($_GET)) {
                     });
             tags = "<p>" + tags + "</p>";
             var caption = $.parseHTML(this.slides[this.currentSlide].caption);
+            $("#footer").empty();
             $("#footer").append(caption);
             $("#footer").append(tags);
         },
