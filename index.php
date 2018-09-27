@@ -556,8 +556,9 @@ if (isset($_GET) && count($_GET)) {
                         tags += "<a href=\"#\" class=\"post-tag\">#" + obj + "</a> ";
                     });
             tags = "<p>" + tags + "</p>";
-
-            $("#footer").html(this.slides[this.currentSlide].caption + tags);
+            var caption = $.parseHTML(this.slides[this.currentSlide].caption);
+            $("#footer").append(caption);
+            $("#footer").append(tags);
         },
         clearPostInfo: function(partial = false) {
             if (!partial)
