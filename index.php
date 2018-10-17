@@ -715,7 +715,7 @@ if (isset($_GET) && count($_GET)) {
         },
         show: function(whereTo) {
             if (!this.locked) {
-                if (this.slides[this.currentSlide].type == "video" && typeof this.iframe[0] !== 'undefined') {
+                if (this.slides[this.currentSlide].type == "video" && typeof this.iframe[0] !== 'undefined' && this.slides[this.currentSlide].video_type == "tumblr") {
                     this.iframe[0].pause();
                     $(this.iframe).attr('src','');
                     $(this.iframe).find('source').last().attr('src','');
