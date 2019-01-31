@@ -67,6 +67,7 @@ if (isset($_GET) && count($_GET)) {
                         }
                         if (isset($_GET['type']) && ($_GET['type'] == "photo" || $_GET['type'] == "video")) {
                             $options['type'] = $_GET['type'];
+                            $requested_type = $_GET['type'];
                         }
                     break;
                     case "likes":
@@ -129,12 +130,10 @@ if (isset($_GET) && count($_GET)) {
                 $response->posts = [];
                 foreach ($posts as $post) {
                     if (isset($_GET['own']) && $_GET['own']=="1" && isset($post->reblogged_from_name)) continue;
-                    /*if (isset($_GET['own']) && $_GET['own']=="1" && isset($post->reblogged_from_name)) {
-                        continue;
-                    }*/
                     $obj = new stdClass;
                     $obj->blog_name = $post->blog_name;
                     $obj->type = $post->type;
+                    $obj->src_type = $post->type;
                     $obj->id = $post->id;
                     $obj->post_url = $post->post_url;
                     $obj->timestamp = $post->timestamp;
@@ -158,20 +157,37 @@ if (isset($_GET) && count($_GET)) {
                             $obj->video_url = (isset($post->video_url) ? $post->video_url : "" );
                             $response->posts[] = clone $obj;
                             break;
-                        /*case "text":
+                        case "text":
                             $dom = new DOMDocument;
                             libxml_use_internal_errors(true);
                             $dom->loadHTML(((isset($post->body) && !empty($post->body)) ? $post->body : "<p></p>" ));
                             libxml_clear_errors();
-                            $images = $dom->getElementsByTagName('img');
-                            if (!empty($images)) {
-                            $obj->type = "photo";
-                                foreach ($images as $image) {
-                                    $obj->src = $image->getAttribute('src');
-                                    $response->posts[] = clone $obj;
+                            $media['photo'] = $dom->getElementsByTagName('img');
+                            $media['video'] = $dom->getElementsByTagName('video');
+                            foreach ($media as $tag => $sources) {
+                                if (!empty($tag)) {
+                                    switch ($tag) {
+                                        case "photo":
+                                            foreach ($sources as $source) {
+                                                $obj->type = "photo";
+                                                $obj->src = $source->getAttribute('src');
+                                                $response->posts[] = clone $obj;
+                                            }
+                                        break;
+                                        case "video":
+                                            foreach ($sources as $source) {
+                                                $obj->type = "video";
+                                                $obj->video_type = "tumblr";
+                                                $obj->html5_capable = "true";
+                                                $obj->player = $dom->saveHTML($source);
+                                                $obj->video_url = $source->getAttribute('src');
+                                                $response->posts[] = clone $obj;
+                                            }
+                                        break;
+                                     }
                                 }
                             }
-                            break;*/
+                            break;
                         default:
                             break;
                     }
