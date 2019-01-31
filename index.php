@@ -79,136 +79,136 @@ if (isset($_GET) && count($_GET)) {
                 }
 
                 do{//start of slides collection
-                switch ($action) {
-                    case "dash":
-                        $result = $client->getDashboardPosts($options);
-                        $posts = $result->posts;
-                    break;
-                    case "blog":
-                        if (isset($_GET['tag']) && !empty($_GET['tag'])) {
-                            $options['tag'] = $_GET['tag'];
-                        }
-                        if (isset($_GET['blog'])) {
-                            $blog = $_GET['blog'];
-                        } else {
-                            $code = 400;
-                        }
-                        try {
-                            $result = $client->getBlogPosts($blog, $options);
-                            $posts = $result->posts;
-                        } catch (Exception $e) {
-                            $code = $e->getCode();
-                            $posts = [];
-                        }
-                    break;
-                    case "likes":
-                        //$clientInfo = $client->getUserInfo();
-                        //$likes = $clientInfo->user->likes;
-                        //$totalPages = intval($likes / $options['limit']) + ($likes % $options['limit'] > 0 ? 1 : 0);
-                        //if ($page <= $totalPages) {
-                            $result = $client->getLikedPosts($options);
-                            $posts = $result->liked_posts;
-                        //} else {
-                        //    $code = 400;
-                        //}
-                    break;
-                    case "tagged":
-                        if (isset($_GET['tag'])) {
-                            $tag = $_GET['tag'];
-                        } else {
-                            $code = 400;
-                        }
-                        try {
-                            $result = $client->getTaggedPosts($tag, $options);
-                            $posts = $result;
-                        } catch (Exception $e) {
-                            $code = $e->getCode();
-                            $posts = [];
-                        }
-                    break;
-                }
-                $response->posts = [];
-                foreach ($posts as $post) {
-                    if (isset($_GET['own']) && $_GET['own']=="1" && isset($post->reblogged_from_name)) continue;
-                    $obj = new stdClass;
-                    $obj->blog_name = $post->blog_name;
-                    $obj->type = $post->type;
-                    $obj->src_type = $post->type;
-                    $obj->id = $post->id;
-                    $obj->post_url = $post->post_url;
-                    $obj->timestamp = $post->timestamp;
-                    $obj->reblog_key = $post->reblog_key;
-                    $obj->liked_timestamp = (isset($post->liked_timestamp) ? $post->liked_timestamp : "" );
-                    $obj->rebloged_from = (isset($post->reblogged_from_name) ? $post->reblogged_from_name : "" );
-                    $obj->source = (isset($post->reblogged_root_name) ? $post->reblogged_root_name : "" );
-                    $obj->tags = (isset($post->tags) ? $post->tags : "" );
-                    $obj->caption = (isset($post->caption) ? $post->caption : "" );
-                    switch ($post->type) {
-                        case "photo":
-                            foreach ($post->photos as $photo) {
-                                $obj->src = $photo->original_size->url;
-                                $response->posts[] = clone $obj;
-                            }
-                            break;
-                        case "video":
-                            $obj->video_type = $post->video_type;
-                            $obj->html5_capable = (isset($post->html5_capable) ? $post->html5_capable : "" );
-                            $obj->player = (isset($post->player) ? $post->player[count($post->player)-1]->embed_code : "" );
-                            $obj->video_url = (isset($post->video_url) ? $post->video_url : "" );
-                            $response->posts[] = clone $obj;
-                            break;
-                        case "text":
-                            $dom = new DOMDocument;
-                            libxml_use_internal_errors(true);
-                            $dom->loadHTML(((isset($post->body) && !empty($post->body)) ? $post->body : "<p></p>" ));
-                            libxml_clear_errors();
-                            $media['photo'] = $dom->getElementsByTagName('img');
-                            $media['video'] = $dom->getElementsByTagName('video');
-                            foreach ($media as $tag => $sources) {
-                                if (!empty($tag)) {
-                                    switch ($tag) {
-                                        case "photo":
-                                            foreach ($sources as $source) {
-                                                $obj->type = "photo";
-                                                $obj->src = $source->getAttribute('src');
-                                                $response->posts[] = clone $obj;
-                                            }
-                                        break;
-                                        case "video":
-                                            foreach ($sources as $source) {
-                                                $obj->type = "video";
-                                                $obj->video_type = "tumblr";
-                                                $obj->html5_capable = "true";
-                                                $obj->player = $dom->saveHTML($source);
-                                                $obj->video_url = $source->getAttribute('src');
-                                                $response->posts[] = clone $obj;
-                                            }
-                                        break;
-                                     }
-                                }
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                /*if (isset($_GET['own']) && $_GET['own']=="1") {
-                    $response->last_id = end($posts)->id;
-                    $code = 203;
-                }*/
-                $last_post = end($posts);
-                if (empty($response->posts) && !empty($posts)) {
                     switch ($action) {
                         case "dash":
+                            $result = $client->getDashboardPosts($options);
+                            $posts = $result->posts;
+                        break;
                         case "blog":
-                            $options['before_id'] = $last_post->id;
+                            if (isset($_GET['tag']) && !empty($_GET['tag'])) {
+                                $options['tag'] = $_GET['tag'];
+                            }
+                            if (isset($_GET['blog'])) {
+                                $blog = $_GET['blog'];
+                            } else {
+                                $code = 400;
+                            }
+                            try {
+                                $result = $client->getBlogPosts($blog, $options);
+                                $posts = $result->posts;
+                            } catch (Exception $e) {
+                                $code = $e->getCode();
+                                $posts = [];
+                            }
                         break;
                         case "likes":
+                            //$clientInfo = $client->getUserInfo();
+                            //$likes = $clientInfo->user->likes;
+                            //$totalPages = intval($likes / $options['limit']) + ($likes % $options['limit'] > 0 ? 1 : 0);
+                            //if ($page <= $totalPages) {
+                                $result = $client->getLikedPosts($options);
+                                $posts = $result->liked_posts;
+                            //} else {
+                            //    $code = 400;
+                            //}
+                        break;
                         case "tagged":
-                            $options['before'] = $last_post->liked_timestamp;
+                            if (isset($_GET['tag'])) {
+                                $tag = $_GET['tag'];
+                            } else {
+                                $code = 400;
+                            }
+                            try {
+                                $result = $client->getTaggedPosts($tag, $options);
+                                $posts = $result;
+                            } catch (Exception $e) {
+                                $code = $e->getCode();
+                                $posts = [];
+                            }
                         break;
                     }
-                }
+                    $response->posts = [];
+                    foreach ($posts as $post) {
+                        if (isset($_GET['own']) && $_GET['own']=="1" && isset($post->reblogged_from_name)) continue;
+                        $obj = new stdClass;
+                        $obj->blog_name = $post->blog_name;
+                        $obj->type = $post->type;
+                        $obj->src_type = $post->type;
+                        $obj->id = $post->id;
+                        $obj->post_url = $post->post_url;
+                        $obj->timestamp = $post->timestamp;
+                        $obj->reblog_key = $post->reblog_key;
+                        $obj->liked_timestamp = (isset($post->liked_timestamp) ? $post->liked_timestamp : "" );
+                        $obj->rebloged_from = (isset($post->reblogged_from_name) ? $post->reblogged_from_name : "" );
+                        $obj->source = (isset($post->reblogged_root_name) ? $post->reblogged_root_name : "" );
+                        $obj->tags = (isset($post->tags) ? $post->tags : "" );
+                        $obj->caption = (isset($post->caption) ? $post->caption : "" );
+                        switch ($post->type) {
+                            case "photo":
+                                foreach ($post->photos as $photo) {
+                                    $obj->src = $photo->original_size->url;
+                                    $response->posts[] = clone $obj;
+                                }
+                                break;
+                            case "video":
+                                $obj->video_type = $post->video_type;
+                                $obj->html5_capable = (isset($post->html5_capable) ? $post->html5_capable : "" );
+                                $obj->player = (isset($post->player) ? $post->player[count($post->player)-1]->embed_code : "" );
+                                $obj->video_url = (isset($post->video_url) ? $post->video_url : "" );
+                                $response->posts[] = clone $obj;
+                                break;
+                            case "text":
+                                $dom = new DOMDocument;
+                                libxml_use_internal_errors(true);
+                                $dom->loadHTML(((isset($post->body) && !empty($post->body)) ? $post->body : "<p></p>" ));
+                                libxml_clear_errors();
+                                $media['photo'] = $dom->getElementsByTagName('img');
+                                $media['video'] = $dom->getElementsByTagName('video');
+                                foreach ($media as $tag => $sources) {
+                                    if (!empty($tag)) {
+                                        switch ($tag) {
+                                            case "photo":
+                                                foreach ($sources as $source) {
+                                                    $obj->type = "photo";
+                                                    $obj->src = $source->getAttribute('src');
+                                                    $response->posts[] = clone $obj;
+                                                }
+                                            break;
+                                            case "video":
+                                                foreach ($sources as $source) {
+                                                    $obj->type = "video";
+                                                    $obj->video_type = "tumblr";
+                                                    $obj->html5_capable = "true";
+                                                    $obj->player = $dom->saveHTML($source);
+                                                    $obj->video_url = $source->getAttribute('src');
+                                                    $response->posts[] = clone $obj;
+                                                }
+                                            break;
+                                         }
+                                    }
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    /*if (isset($_GET['own']) && $_GET['own']=="1") {
+                        $response->last_id = end($posts)->id;
+                        $code = 203;
+                    }*/
+                    $last_post = end($posts);
+                    if (empty($response->posts) && !empty($posts)) {
+                        switch ($action) {
+                            case "dash":
+                            case "blog":
+                                $options['before_id'] = $last_post->id;
+                            break;
+                            case "likes":
+                            case "tagged":
+                                $options['before'] = $last_post->liked_timestamp;
+                            break;
+                        }
+                    }
                 } while (empty($response->posts) && !empty($posts));//end of slides collection
                 //} while (count($response->posts)<10);//end of slides collection
 
