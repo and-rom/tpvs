@@ -1201,15 +1201,18 @@ if (isset($_GET) && count($_GET)) {
                          navigator.userAgent.match(/Windows Phone/i));
     var videoMuted = true;
     $(window).on('mouseleave blur focusout', function (e) {
+        e.stopPropagation();
         e.preventDefault();
         if (stealthMode) {
             //console.log("Hiding body");
             $('body').hide();
         }
     });
+    var keyHidden = false;
     $(window).on('mouseenter mouseover', function (e) {
+        e.stopPropagation();
         e.preventDefault();
-        if (stealthMode) {
+        if (stealthMode && !keyHidden) {
             //console.log("Showing body");
             $('body').show();
             if (currentLayout.wasHidden) {
@@ -1290,6 +1293,15 @@ if (isset($_GET) && count($_GET)) {
                 stealthMode = !stealthMode;
                 videoMuted = stealthMode;
                 setMessage("Stealth mode " + (stealthMode ? "enabled" : "disabled"));
+                break;
+            case 192: // '`'
+                if (stealthMode) {
+                    $('body').toggle();
+                    keyHidden = $('body').is( ":hidden" );
+                    if (currentLayout.wasHidden) {
+                        currentLayout.resize();
+                    }
+                }
                 break;
             case 77: // 'm'
                 currentLayout.muteToggle();
