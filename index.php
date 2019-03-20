@@ -67,7 +67,6 @@ if (isset($_GET) && count($_GET)) {
                         }
                         if (isset($_GET['type']) && ($_GET['type'] == "photo" || $_GET['type'] == "video")) {
                             $options['type'] = $_GET['type'];
-                            $requested_type = $_GET['type'];
                         }
                     break;
                     case "likes":
@@ -168,6 +167,7 @@ if (isset($_GET) && count($_GET)) {
                                     if (!empty($tag)) {
                                         switch ($tag) {
                                             case "photo":
+                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "photo") continue;
                                                 foreach ($sources as $source) {
                                                     $obj->type = "photo";
                                                     $obj->src = $source->getAttribute('src');
@@ -175,6 +175,7 @@ if (isset($_GET) && count($_GET)) {
                                                 }
                                             break;
                                             case "video":
+                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "video") continue;
                                                 foreach ($sources as $source) {
                                                     $obj->type = "video";
                                                     $obj->video_type = "tumblr";
@@ -386,6 +387,9 @@ if (isset($_GET) && count($_GET)) {
             //this.before = before != "" ? before : this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.slides[this.slides.length-1].id : "";
             this.before = before != "" ? before : this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.last_id : "";
             console.log("Before " + this.before);
+
+            if (restore && layoutType == "dash" && this.type != type) { this.type = type }
+
             $.ajax({
                 dataType: "json",
                 url: "./index.php",
@@ -917,13 +921,11 @@ if (isset($_GET) && count($_GET)) {
         if (typeof Cookies.get("before") !== 'undefined') {
             console.log("Dashboard MAY be restored");
             if (confirm('Do you want to restore dash?')) {
-                console.log("Restore");
                 $('#content').empty();
+                console.log("Restore " + Cookies.get("layoutType") + " " + (Cookies.get("blog")!="" ? Cookies.get("blog") + " " : "") + Cookies.get("type"));
                 if (Cookies.get("layoutType") == "dash") {
-                    console.log("Restore dash");
                     currentLayout.update(true, Cookies.get("layoutType"),Cookies.get("blog"),Cookies.get("before"),Cookies.get("type"));
                 } else {
-                    console.log("Restore " + Cookies.get("layoutType") + " " + Cookies.get("blog") + " " + Cookies.get("type"));
                     layouts.push({
                         __proto__: layout$,
                         layoutType: Cookies.get("layoutType"),
@@ -931,11 +933,12 @@ if (isset($_GET) && count($_GET)) {
                         type: Cookies.get("type")
                     });
                     currentLayout = layouts[layouts.length-1];
-                    $("#type").val(currentLayout.type);
                     currentLayout.update(true, "","",Cookies.get("before"),"");
-                    $("#back").show();
-                    $("#header, #footer").hide();
                 }
+                console.log(currentLayout.type);
+                $("#type").val(currentLayout.type);
+                $("#back").show();
+                $("#header, #footer").hide();
             } else {
                 console.log("Don't restore");
             }
