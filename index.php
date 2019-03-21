@@ -1251,6 +1251,7 @@ if (isset($_GET) && count($_GET)) {
             case 69: // 'e'
                 // blog
                 $("#blog-name").click();
+                break;
             case 83: // 's'
                 // reblogged from
                 $("#reblogged-from").click();
