@@ -935,9 +935,8 @@ if (isset($_GET) && count($_GET)) {
                     currentLayout = layouts[layouts.length-1];
                     currentLayout.update(true, "","",Cookies.get("before"),"");
                 }
-                console.log(currentLayout.type);
                 $("#type").val(currentLayout.type);
-                $("#back").show();
+                $("#back").toggle(currentLayout.layoutType != "dash");
                 $("#header, #footer").hide();
             } else {
                 console.log("Don't restore");
