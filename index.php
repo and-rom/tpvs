@@ -1046,10 +1046,8 @@ if (isset($_GET) && count($_GET)) {
         $("#type").val(currentLayout.type);
         currentLayout.save();
         currentLayout.display();
-        if (layouts.length == 1) {
-            $("#back").hide();
-            $("#home").hide();
-        }
+        if (layouts.length < 3) $("#home").hide();
+        if (layouts.length == 1) $("#back").hide();
     });
     $("#open-post").on('click',function (e){
         if (typeof currentLayout.slides[currentLayout.currentSlide].post_url !== 'undefined' && currentLayout.slides[currentLayout.currentSlide].post_url !== '')
