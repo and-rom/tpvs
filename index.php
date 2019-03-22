@@ -1503,7 +1503,6 @@ if (isset($_GET) && count($_GET)) {
         display:none;
     }
     #view-blog-name {
-        /*display:none;*/
         border: 0.02px solid white;
         color: white;
         background-color: transparent;
@@ -1674,9 +1673,17 @@ if (isset($_GET) && count($_GET)) {
     #prev {
         left: 0;
     }
-    @media screen and (max-width: 600px) {
+    @media screen and (max-width: 800px) {
         .header-container {
             line-height: initial;
+        }
+    }
+    @media screen and (max-width: 1000px) {
+        select {
+            padding-left: 0;
+        }
+        #view-blog-name {
+            display:none;
         }
     }
   </style>
