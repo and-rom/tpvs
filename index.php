@@ -569,7 +569,7 @@ if (isset($_GET) && count($_GET)) {
                 $("#source-icon").hide();
             }
 
-            $("#date").html(this.age(this.slides[this.currentSlide].timestamp));
+            $("#date").html("<span title=\"" + this.dateTime(this.slides[this.currentSlide].timestamp) + "\">" + this.age(this.slides[this.currentSlide].timestamp) + "</span>");
 
             var tags = "";
             $.each(this.slides[this.currentSlide].tags, function(i, obj) {
@@ -831,6 +831,11 @@ if (isset($_GET) && count($_GET)) {
             else if (elapsed < 2592000000) {return 'approx. ' + Math.round(elapsed/86400000) + ' days ago';}
             else if (elapsed < 31536000000) {return 'approx. ' + Math.round(elapsed/2592000000) + ' months ago';}
             else {return 'approx. ' + Math.round(elapsed/31536000000) + ' years ago';}
+        },
+        dateTime: function(timestamp) {
+            var pubDate = new Date(timestamp*1000);
+
+            return pubDate.toLocaleDateString() + " " + pubDate.toLocaleTimeString();
         },
         seek: function(direction) {
             if (this.slides[this.currentSlide].type == "video" && typeof this.iframe[0] !== 'undefined' && !isNaN(this.iframe[0].duration)) {
