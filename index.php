@@ -1339,7 +1339,7 @@ if (isset($_GET) && count($_GET)) {
     var xDown,yDown,xUp,yUp = null;
     var xDiffPrev = 0;
     var touchOff = false;
-    var rightButtonDown = false;
+    var mouseButtonDown = false;
     $("#content").bind('touchstart', function (ev) {
         ev.stopPropagation();
         if ( touchOff ) {return;}
@@ -1349,8 +1349,9 @@ if (isset($_GET) && count($_GET)) {
     });
     $("#content").mousedown(function(ev) {
         var e = ev.originalEvent;
-        if (e.which ==  3) {
-            rightButtonDown = true;
+        console.log (e.which);
+        if (e.which ==  2) {
+            mouseButtonDown = true;
             xDown = e.clientX;
             yDown = e.clientY;
         }
@@ -1385,7 +1386,7 @@ if (isset($_GET) && count($_GET)) {
 
     });
     $("#content").mousemove(function(ev) {
-        if (!rightButtonDown) {return;}
+        if (!mouseButtonDown) {return;}
         if ( ! xDown || ! yDown ) {return;}
         var e = ev.originalEvent;
         xUp = e.clientX;
@@ -1431,8 +1432,8 @@ if (isset($_GET) && count($_GET)) {
     });
     $("#content").mouseup(function(ev) {
         var e = ev.originalEvent;
-        if (e.which ==  3) {
-            rightButtonDown = false;
+        if (e.which ==  2) {
+            mouseButtonDown = false;
             if ( typeof xUp == 'undefined' || ! xUp || ! yUp ) {return;}
             xDown = null;
             yDown = null;
