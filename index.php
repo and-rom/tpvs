@@ -838,6 +838,8 @@ if (isset($_GET) && count($_GET)) {
             }
         },
         test: function(){
+            console.log("this.updateLocked: " + this.updateLocked);
+            console.log("this.locked: " + this.locked);
             console.log("this.layoutType: " + this.layoutType);
             console.log("this.blog: " + this.blog);
             console.log("this.type: " + this.type);
