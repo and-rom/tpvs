@@ -142,6 +142,39 @@ if (isset($_GET) && count($_GET)) {
                         $obj->source = (isset($post->reblogged_root_name) ? $post->reblogged_root_name : "" );
                         $obj->tags = (isset($post->tags) ? $post->tags : "" );
                         $obj->caption = (isset($post->caption) ? $post->caption : "" );
+
+                                $dom = new DOMDocument;
+                                libxml_use_internal_errors(true);
+                                $dom->loadHTML(((isset($post->caption) && !empty($post->caption)) ? $post->caption : "<p></p>" ));
+                                libxml_clear_errors();
+                                $media['photo'] = $dom->getElementsByTagName('img');
+                                $media['video'] = $dom->getElementsByTagName('video');
+                                foreach ($media as $tag => $sources) {
+                                    if (!empty($tag)) {
+                                        switch ($tag) {
+                                            case "photo":
+                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "photo") continue;
+                                                foreach ($sources as $source) {
+                                                    $obj->type = "photo";
+                                                    $obj->src = $source->getAttribute('src');
+                                                    $response->posts[] = clone $obj;
+                                                }
+                                            break;
+                                            case "video":
+                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "video") continue;
+                                                foreach ($sources as $source) {
+                                                    $obj->type = "video";
+                                                    $obj->video_type = "tumblr";
+                                                    $obj->html5_capable = "true";
+                                                    $obj->player = $dom->saveHTML($source);
+                                                    $obj->video_url = $source->getAttribute('src');
+                                                    $response->posts[] = clone $obj;
+                                                }
+                                            break;
+                                         }
+                                    }
+                                }
+
                         switch ($post->type) {
                             case "photo":
                                 foreach ($post->photos as $photo) {
