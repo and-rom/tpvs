@@ -347,7 +347,6 @@ if (isset($_GET) && count($_GET)) {
   <script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
   <script type="text/javascript">
   $(document).ready(function(){
-    console.log("Doc ready");
     var currentLayout;
 
     var layouts = [];
@@ -370,15 +369,12 @@ if (isset($_GET) && count($_GET)) {
         updateLocked: false,
         // Methods
         save: function(){
-        console.log("Saving.");
             Cookies.set("layoutType", this.layoutType, { expires : 0.5 });
             Cookies.set("blog", this.blog, { expires : 0.5 });
             Cookies.set("type", this.type, { expires : 0.5 });
         },
         update: function(restore = false, layoutType = "", blog = "", before = "", type = ""){
-            console.log("Updating " + this.blog);
             if (this.updateLocked) {
-                console.log("Update locked");
                 return;
             }
             $("#loader").show();
@@ -386,7 +382,6 @@ if (isset($_GET) && count($_GET)) {
 
             //this.before = before != "" ? before : this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.slides[this.slides.length-1].id : "";
             this.before = before != "" ? before : this.slides.length != 0 ? this.layoutType == "likes" ? this.slides[this.slides.length-1].liked_timestamp : this.last_id : "";
-            console.log("Before " + this.before);
 
             if (restore && layoutType == "dash" && this.type != type) { this.type = type }
 
@@ -408,7 +403,6 @@ if (isset($_GET) && count($_GET)) {
             });
         },
         like: function(action){
-            console.log(action == "like" ? "Liking" : "Unliking");
             $("#loader").show();
             $.ajax({
                 dataType: "json",
@@ -439,20 +433,16 @@ if (isset($_GET) && count($_GET)) {
             setMessage("Restored");
         },
         response: function(data){
-            console.log("Response");
             switch (data.code) {
                 case 200:
                     $(document).trigger('auth');
                     if (data.hasOwnProperty('posts')) {
-                        console.log("Get " + data.posts.length + " posts");
-                        console.log(data); //console.log(data.posts);
                         $("#loader").hide();
                         if (data.posts.length == 0) {
                             this.noMore = true;
                             setMessage("No more posts.");
                         }
                         this.slides = this.slides.concat(data.posts);
-                        console.log("Total posts: " + this.slides.length);
                         this.updateLocked = false;
                         if (this.currentSlide == 0) {
                             this.display();
@@ -464,18 +454,14 @@ if (isset($_GET) && count($_GET)) {
                     setMessage(data.msg);
                     $("#loader").hide();
                     if (data.hasOwnProperty('posts')) {
-                        console.log("Get " + data.posts.length + " posts");
-                        console.log(data.posts);
                         if (data.posts.length == 0) this.noMore = true;
                         this.slides = this.slides.concat(data.posts);
-                        console.log("Total posts: " + this.slides.length);
                     }
                     this.updateLocked = false;
                     this.clearPostInfo();
                     $("#header, #footer").show();
                     break;
                 case 511:
-                    console.log(data);
                     $("#loader").hide();
                     setMessage(data.msg);
                     if (data.hasOwnProperty('auth_url')) {
@@ -487,45 +473,36 @@ if (isset($_GET) && count($_GET)) {
                 case 201:
                 case 202:
                 default:
-                    console.log(data);
                     $("#loader").hide();
                     setMessage(data.msg);
                     break;
             }
         },
         error: function(jqXHR, textStatus, errorThrown) {
-            console.log(textStatus, errorThrown);
             setMessage("Update error!");
             this.updateLocked = false;
         },
         /*
         complete: function(jqXHR, textStatus) {
-            console.log(textStatus);
             this.updateLocked = false;
         },
         */
         lock: function() {
-            console.log("Locked.");
             $("#loader").show();
             this.locked = true;
         },
         unlock: function() {
-            console.log("Unlocked.");
             if (!this.updateLocked) $("#loader").hide();
             this.locked = false;
         },
         checkHidden: function() {
             if ($('body').is(":visible")) {
-                console.log("Was not hidden");
                 this.wasHidden = false;
             } else {
-                console.log("Was hidden");
                 this.wasHidden = true;
             }
         },
         display: function(){
-            console.log("Current slide: " + this.currentSlide + "/" + this.slides.length + " >" + this.slides.length/2);
-
             this.lock();
             if (this.slides.length == 0) {
                 this.unlock();
@@ -541,14 +518,10 @@ if (isset($_GET) && count($_GET)) {
             }
 
             if (this.currentSlide-1 < 0 ) {
-                console.log("Setting cookie before: NONE");
                 Cookies.set("before", "", { expires : 0.5 });
             } else {
-                console.log("Setting cookie before: " + this.slides[this.currentSlide-1].id);
                 Cookies.set("before", this.slides[this.currentSlide-1].id, { expires : 0.5 });
-                console.log("Previous slide id : " + this.slides[this.currentSlide-1].id);
             }
-            console.log("Current slide id : " + this.slides[this.currentSlide].id);
         },
         displayPostInfo: function() {
             $("#blog-name").html(this.slides[this.currentSlide].blog_name);
@@ -638,7 +611,6 @@ if (isset($_GET) && count($_GET)) {
                 var img = new Image();
                 img.src = $(this.iframe).attr('poster');
                 img.onload = function(){
-                    console.log("Poster loaded");
                     _this.unlock();
                 };
 
@@ -669,25 +641,9 @@ if (isset($_GET) && count($_GET)) {
                 .on('loadeddata', function (event) {
                     _this.iframe[0].play();
                 })
-                .on('seeked', function (event) {
-                    console.log("Video seek finished");
-                })
-                /*
-                .on('load', function (event) {
-                    console.log("Video loading continues");
-                })
-                .on('seeked', function (event) {
-                    console.log("Video seek finished");
-                })
-                */
                 .on('seeking', function (event) {
                     $("#loader").show();
                 })
-                /*
-                .on('progress', function (event) {
-                    console.log("Progress");
-                })
-                */
                 .on('waiting', function (event) {
                     $("#loader").show();
                 })
@@ -718,7 +674,6 @@ if (isset($_GET) && count($_GET)) {
                 if (typeof window.instgrm !== 'undefined')
                     window.instgrm.Embeds.process();
                 setTimeout(function(){
-                    console.log(window.instgrm);
                     currentLayout.iframe = $('iframe').first();
                     currentLayout.resize();
                     $(currentLayout.iframe).css("max-width","")
@@ -726,8 +681,6 @@ if (isset($_GET) && count($_GET)) {
                 $("#controls").show().fadeTo( 1000, 0 );
               break;
               default:
-                console.log("Video type: " + this.slides[this.currentSlide].video_type);
-                console.log(this.slides[this.currentSlide].player);
                 $("#content").empty().append($("#error-icon").clone());
                 this.unlock();
               break;
@@ -752,12 +705,9 @@ if (isset($_GET) && count($_GET)) {
                     this.display();
                     $("#header, #footer").hide();
                 }
-            } else {
-                console.log("Still locked. Downloading. Wait.");
             }
         },
         next: function(){
-            console.log("Next");
             if (this.currentSlide+1 > this.slides.length/2) {
                 if (!this.noMore) this.update();
                 this.updateLocked = true;
@@ -770,7 +720,6 @@ if (isset($_GET) && count($_GET)) {
             }
         },
         prev: function(){
-            console.log("Prev");
             if (this.currentSlide > 0) {
                 this.currentSlide--;
                 return true;
@@ -783,7 +732,6 @@ if (isset($_GET) && count($_GET)) {
             if (this.wasHidden) {
                 return;
             }
-            console.log("Resizing");
             var elmt = window, prop = "inner";
             if (!("innerWidth" in window)) {
                 elmt = document.documentElement || document.body;
@@ -799,12 +747,6 @@ if (isset($_GET) && count($_GET)) {
                 ri = ih / iw,
                 newWidth,
                 newHeight;
-            //console.log("ww: " + ww);
-            //console.log("wh: " + wh);
-            //console.log("iw: " + iw);
-            //console.log("ih: " + ih);
-            //console.log("rw: " + rw);
-            //console.log("ri: " + ri);
             if (rw < ri) {
                newWidth = wh / ri;
                newHeight = wh;
@@ -812,8 +754,6 @@ if (isset($_GET) && count($_GET)) {
                 newWidth = ww;
                 newHeight = ww * ri;
             }
-            //console.log("newWidth: " + newWidth);
-            //console.log("newHeight: " + newHeight);
             properties = {
                 width: newWidth + "px",
                 height: newHeight + "px",
@@ -920,14 +860,10 @@ if (isset($_GET) && count($_GET)) {
 
     currentLayout.update();
 
-    //console.log("Cookies before_id: " + Cookies.get("before"));
-
     $(document).one('auth',function (e){
         if (typeof Cookies.get("before") !== 'undefined') {
-            console.log("Dashboard MAY be restored");
             if (confirm('Do you want to restore dash?')) {
                 $('#content').empty();
-                console.log("Restore " + Cookies.get("layoutType") + " " + (Cookies.get("blog")!="" ? Cookies.get("blog") + " " : "") + Cookies.get("type"));
                 if (Cookies.get("layoutType") == "dash") {
                     currentLayout.update(true, Cookies.get("layoutType"),Cookies.get("blog"),Cookies.get("before"),Cookies.get("type"));
                 } else {
@@ -943,11 +879,7 @@ if (isset($_GET) && count($_GET)) {
                 $("#type").val(currentLayout.type);
                 $("#back").toggle(currentLayout.layoutType != "dash");
                 $("#header, #footer").hide();
-            } else {
-                console.log("Don't restore");
             }
-        } else {
-            console.log("Dashboard MAY NOT be restored");
         }
         currentLayout.save();
     });
@@ -974,7 +906,6 @@ if (isset($_GET) && count($_GET)) {
         }
     });
     $("#blog-name, #reblogged-from, #source, #likes, #view-blog").on('click',function (e){
-        console.log("Clicked on " + ( $(this).children().length == 0 ? "blog link " + $(this).html() : "button with id " + this.id) );
         switch(this.id) {
             case 'likes':
                 $('#content').empty();
@@ -1020,7 +951,6 @@ if (isset($_GET) && count($_GET)) {
             break;
         }
 
-        //console.log(layouts);
         currentLayout = layouts[layouts.length-1];
         $("#type").val(currentLayout.type);
         currentLayout.update();
@@ -1028,7 +958,6 @@ if (isset($_GET) && count($_GET)) {
         $("#back").show();
         if (layouts.length > 2) $("#home").show();
         $("#header, #footer").hide();
-        //currentLayout.test();
     });
     $('#view-blog-name').on("keypress", function(e) {
         if (e.keyCode == 13)
@@ -1118,14 +1047,11 @@ if (isset($_GET) && count($_GET)) {
         var tag = $(this).html().split("#",2)[1];
         var blog = currentLayout.slides[currentLayout.currentSlide].blog_name;
         if (currentLayout.layoutType == "blog") {
-            console.log("Current layout is blog. Updating it.");
             currentLayout.tag = tag;
             currentLayout.currentSlide=0;
             currentLayout.currentPage=0;
             currentLayout.slides=[];
         } else {
-            console.log("Current layout is dash or likes. Creating new layout and updating it.");
-            console.log(blog + "#" + tag);
             layouts.push({
                 __proto__: layout$,
                 layoutType: "blog",
@@ -1167,32 +1093,15 @@ if (isset($_GET) && count($_GET)) {
     var hided = false;
     $(window).on("mousemove",function () {
         if (!hided) {
-            //console.log("Cursor and controls not hided")
             if (timer) {
                 clearTimeout(timer);
                 timer = 0;
             }
         } else {
-            //console.log("Cursor and controls hided")
-            if ($(currentLayout.iframe).is("video")) {
-                /*
-                //$(currentLayout.iframe).prop("controls",true);
-                //$(currentLayout.iframe).attr("controls","controls");
-                $(currentLayout.iframe).addClass("video-p");
-                */
-            }
             $('html').css({cursor: ''});
             hided = false;
         }
         timer = setTimeout(function () {
-            console.log("Hiding cursor and controls")
-            if ($(currentLayout.iframe).is("video")) {
-                /*
-                //$(currentLayout.iframe).removeAttr("controls");
-                //$(currentLayout.iframe).prop("controls",false);
-                $(currentLayout.iframe).removeClass("video-p");
-                */
-            }
             $('html').css({cursor: 'none'});
             hided = true;
         }, 2000);
@@ -1209,7 +1118,6 @@ if (isset($_GET) && count($_GET)) {
         e.stopPropagation();
         e.preventDefault();
         if (stealthMode) {
-            //console.log("Hiding body");
             $('body').hide();
         }
     });
@@ -1218,7 +1126,6 @@ if (isset($_GET) && count($_GET)) {
         e.stopPropagation();
         e.preventDefault();
         if (stealthMode && !keyHidden) {
-            //console.log("Showing body");
             $('body').show();
             if (currentLayout.wasHidden) {
                 currentLayout.resize();
@@ -1313,7 +1220,7 @@ if (isset($_GET) && count($_GET)) {
                 currentLayout.muteToggle();
                 break;
             case 73: // 'i'
-                console.log(currentLayout.slides[currentLayout.currentSlide].id);
+                currentLayout.test();
                 break;
             default:
                 break;
@@ -1349,7 +1256,6 @@ if (isset($_GET) && count($_GET)) {
     });
     $("#content").mousedown(function(ev) {
         var e = ev.originalEvent;
-        console.log (e.which);
         if (e.which ==  2) {
             mouseButtonDown = true;
             xDown = e.clientX;
