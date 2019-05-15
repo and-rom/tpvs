@@ -604,6 +604,11 @@ if (isset($_GET) && count($_GET)) {
             this.iframe = new Image();
             this.iframe.src = this.slides[this.currentSlide].src;
             var _this = this;
+            this.iframe.onerror = function() {
+                $('#content').empty();
+                setMessage("Load error");
+                _this.unlock();
+            };
             this.iframe.onload = function() {
                 $('#content').empty();
                 $(this).appendTo('#content').attr('id',"photo").addClass("photo");
