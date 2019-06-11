@@ -1,2 +1,2 @@
 # tpvs
-Tumble Photo Video Slider
+Tumblr Photo Video Slider
