@@ -152,16 +152,16 @@ if (isset($_GET) && count($_GET)) {
                                 foreach ($media as $tag => $sources) {
                                     if (!empty($tag)) {
                                         switch ($tag) {
-                                            case "photo":
-                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "photo") continue 2;
+                                            case "photo": 
+                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "photo") continue 2;
                                                 foreach ($sources as $source) {
                                                     $obj->type = "photo";
                                                     $obj->src = $source->getAttribute('src');
                                                     $response->posts[] = clone $obj;
                                                 }
                                             break;
-                                            case "video":
-                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "video") continue 2;
+                                            case "video": 
+                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "video") continue 2;
                                                 foreach ($sources as $source) {
                                                     $obj->type = "video";
                                                     $obj->video_type = "tumblr";
@@ -199,16 +199,16 @@ if (isset($_GET) && count($_GET)) {
                                 foreach ($media as $tag => $sources) {
                                     if (!empty($tag)) {
                                         switch ($tag) {
-                                            case "photo":
-                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "photo") continue 2;
+                                            case "photo": 
+                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "photo") continue 2;
                                                 foreach ($sources as $source) {
                                                     $obj->type = "photo";
                                                     $obj->src = $source->getAttribute('src');
                                                     $response->posts[] = clone $obj;
                                                 }
                                             break;
-                                            case "video":
-                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "video") continue 2;
+                                            case "video": 
+                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "video") continue 2;
                                                 foreach ($sources as $source) {
                                                     $obj->type = "video";
                                                     $obj->video_type = "tumblr";
