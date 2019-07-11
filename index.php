@@ -153,7 +153,7 @@ if (isset($_GET) && count($_GET)) {
                                     if (!empty($tag)) {
                                         switch ($tag) {
                                             case "photo":
-                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "photo") continue;
+                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "photo") continue 2;
                                                 foreach ($sources as $source) {
                                                     $obj->type = "photo";
                                                     $obj->src = $source->getAttribute('src');
@@ -161,7 +161,7 @@ if (isset($_GET) && count($_GET)) {
                                                 }
                                             break;
                                             case "video":
-                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "video") continue;
+                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "video") continue 2;
                                                 foreach ($sources as $source) {
                                                     $obj->type = "video";
                                                     $obj->video_type = "tumblr";
@@ -200,7 +200,7 @@ if (isset($_GET) && count($_GET)) {
                                     if (!empty($tag)) {
                                         switch ($tag) {
                                             case "photo":
-                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "photo") continue;
+                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "photo") continue 2;
                                                 foreach ($sources as $source) {
                                                     $obj->type = "photo";
                                                     $obj->src = $source->getAttribute('src');
@@ -208,7 +208,7 @@ if (isset($_GET) && count($_GET)) {
                                                 }
                                             break;
                                             case "video":
-                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "video") continue;
+                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "video") continue 2;
                                                 foreach ($sources as $source) {
                                                     $obj->type = "video";
                                                     $obj->video_type = "tumblr";
