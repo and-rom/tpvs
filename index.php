@@ -251,6 +251,7 @@ if (isset($_GET) && count($_GET)) {
                                          }
                                     }
                                 }
+                                unset($dom);
                                 break;
                             default:
                                 break;
