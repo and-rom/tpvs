@@ -143,37 +143,67 @@ if (isset($_GET) && count($_GET)) {
                         $obj->tags = (isset($post->tags) ? $post->tags : "" );
                         $obj->caption = (isset($post->caption) ? $post->caption : "" );
 
+                            if (isset($post->caption) && !empty($post->caption)) {
                                 $dom = new DOMDocument;
                                 libxml_use_internal_errors(true);
-                                $dom->loadHTML(((isset($post->caption) && !empty($post->caption)) ? $post->caption : "<p></p>" ));
+                                $dom->loadHTML($post->caption);
                                 libxml_clear_errors();
                                 $media['photo'] = $dom->getElementsByTagName('img');
                                 $media['video'] = $dom->getElementsByTagName('video');
-                                foreach ($media as $tag => $sources) {
-                                    if (!empty($tag)) {
-                                        switch ($tag) {
-                                            case "photo": 
-                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "photo") continue 2;
-                                                foreach ($sources as $source) {
-                                                    $obj->type = "photo";
-                                                    $obj->src = $source->getAttribute('src');
-                                                    $response->posts[] = clone $obj;
-                                                }
-                                            break;
-                                            case "video": 
-                                                if (isset($options['type']) && !empty($options['type']) && $options['type'] != "video") continue 2;
-                                                foreach ($sources as $source) {
-                                                    $obj->type = "video";
-                                                    $obj->video_type = "tumblr";
-                                                    $obj->html5_capable = "true";
-                                                    $obj->player = $dom->saveHTML($source);
-                                                    $obj->video_url = $source->getAttribute('src');
-                                                    $response->posts[] = clone $obj;
-                                                }
-                                            break;
-                                         }
+                                if (count($media['photo']) > 0 || count($media['photo']) > 0) {
+                                    $tmp_dom = new DOMDocument;
+                                    $tmp_dom->loadHTML($post->caption);
+                                    $domNodeList = $tmp_dom->getElementsByTagName('img');
+                                    $domElemsToRemove = array();
+                                    foreach ( $domNodeList as $domElement ) {
+                                        $domElemsToRemove[] = $domElement;
                                     }
+                                    foreach( $domElemsToRemove as $domElement ){
+                                        $domElement->parentNode->removeChild($domElement);
+                                    }
+                                    $domNodeList = $tmp_dom->getElementsByTagName('video');
+                                    $domElemsToRemove = array();
+                                    foreach ( $domNodeList as $domElement ) {
+                                        $domElemsToRemove[] = $domElement;
+                                    }
+                                    foreach( $domElemsToRemove as $domElement ){
+                                        $domElement->parentNode->removeChild($domElement);
+                                    }
+                                    $obj->caption = $tmp_dom->saveHTML();
+                                    unset($tmp_dom);
+
+                                    foreach ($media as $tag => $sources) {
+                                        if (!empty($tag)) {
+                                            switch ($tag) {
+                                                case "photo":
+                                                    if (isset($options['type']) && !empty($options['type']) && $options['type'] != "photo") continue 2;
+                                                    foreach ($sources as $source) {
+                                                        $obj->type = "photo";
+                                                        $obj->src = $source->getAttribute('src');
+                                                        $response->posts[] = clone $obj;
+                                                    }
+                                                break;
+                                                case "video":
+                                                    if (isset($options['type']) && !empty($options['type']) && $options['type'] != "video") continue 2;
+                                                    foreach ($sources as $source) {
+                                                        $obj->type = "video";
+                                                        $obj->video_type = "tumblr";
+                                                        $obj->html5_capable = "true";
+                                                        $obj->player = $dom->saveHTML($source);
+                                                        $obj->video_url = $source->getAttribute('src');
+                                                        $response->posts[] = clone $obj;
+                                                    }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                } else {
+                                $obj->caption = $post->caption;
                                 }
+                            unset($dom);
+                            } else {
+                                $obj->caption = "";
+                            }
 
                         switch ($post->type) {
                             case "photo":
