@@ -342,7 +342,7 @@ if (isset($_GET) && count($_GET)) {
         }
     } else {
         // start the old gal up
-        $callbackUrl = $_SERVER['REQUEST_SCHEME']."://".$_SERVER['SERVER_NAME'].dirname($_SERVER['SCRIPT_NAME']);
+        $callbackUrl = $_SERVER['REQUEST_SCHEME']."://".$_SERVER['SERVER_NAME'].(($_SERVER['SERVER_PORT'] != '80' && $_SERVER['SERVER_PORT'] != '443') ? ':' . $_SERVER['SERVER_PORT'] : '').dirname($_SERVER['SCRIPT_NAME']);
         $resp = $requestHandler->request('POST', 'oauth/request_token', array('oauth_callback' => $callbackUrl));
         // Get the result
         $result = (string) $resp->body;
